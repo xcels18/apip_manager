@@ -563,7 +563,7 @@ async function filterPlhPegawai(query) {
     clearTimeout(plhSearchTimeout);
     plhSearchTimeout = setTimeout(async () => {
         try {
-            const response = await fetch('/api/pegawai/search?search=' + encodeURIComponent(query));
+            const response = await fetch('/ajax/pegawai/search?search=' + encodeURIComponent(query));
             const json = await response.json();
             
             // Handle if data is nested inside data.data or just data
