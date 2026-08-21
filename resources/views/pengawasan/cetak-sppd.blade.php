@@ -367,13 +367,13 @@
                     <div class="info-row">
                         <span class="info-label">Nomor</span>
                         <span class="info-colon">:</span>
-                        <span class="info-value">000.1.3.3/<span style="display: inline-block; width: 20px; border-bottom: 1px solid #000; margin: 0 2px;"></span>/SPPD/SET/2025</span>
+                        <span class="info-value">000.1.3.3/<span style="display: inline-block; width: 20px; border-bottom: 1px solid #000; margin: 0 2px;"></span>/SPPD/SET/{{ \Carbon\Carbon::parse($pengawasan->created_at)->format('Y') }}</span>
                     </div>
                     @else
                     <div class="info-row">
                         <span class="info-label">Nomor</span>
                         <span class="info-colon">:</span>
-                        <span class="info-value">000.1.3.3/<span style="display: inline-block; width: 20px; border-bottom: 1px solid #000; margin: 0 2px;"></span>/SPPD/ITKAB/2025</span>
+                        <span class="info-value">000.1.3.3/<span style="display: inline-block; width: 20px; border-bottom: 1px solid #000; margin: 0 2px;"></span>/SPPD/ITKAB/{{ \Carbon\Carbon::parse($pengawasan->created_at)->format('Y') }}</span>
                     </div>
                     @endif
 
@@ -479,7 +479,7 @@
                 <br>
                 Inspektorat Daerah Kab. Puncak jaya<br>
                 5.102.04.01 (KM)<br>
-                Tahun 2025
+                Tahun {{ \Carbon\Carbon::parse($pengawasan->created_at)->format('Y') }}
             </td>
         </tr>
         <tr>
