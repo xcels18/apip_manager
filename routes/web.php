@@ -21,6 +21,7 @@ Route::middleware('auth')->group(function () {
 
     // Master Data Pegawai
     Route::get('/pegawai', [PegawaiController::class, 'index'])->name('pegawai.index');
+    Route::get('/api/pegawai/search', [PegawaiController::class, 'searchApi'])->name('pegawai.search');
 
     // Pengawasan
     Route::resource('pengawasan', PengawasanController::class);

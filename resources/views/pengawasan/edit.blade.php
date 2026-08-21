@@ -599,25 +599,42 @@ function togglePenandatangan() {
 
 var plhSearchResults = [];
 
-function filterPlhPegawai(query) {
+var plhSearchTimeout = null;
+
+async function filterPlhPegawai(query) {
     const dropdown = document.getElementById('plh_dropdown');
     if (!query) {
         dropdown.style.display = 'none';
         return;
     }
-    const lower = query.toLowerCase();
-    plhSearchResults = pegawaiData.filter(p => p.nama.toLowerCase().includes(lower)).slice(0, 10);
-    if (plhSearchResults.length === 0) {
-        dropdown.innerHTML = '<div class="px-4 py-3 text-on-surface-variant text-[13px]">Tidak ada hasil</div>';
-    } else {
-        dropdown.innerHTML = plhSearchResults.map((p, i) => `
-            <div onclick="selectPlhPegawai(${i})" class="px-4 py-2 cursor-pointer hover:bg-primary/5 border-b border-border-subtle last:border-0 transition-colors">
-                <div class="font-bold text-[13px] text-on-surface">${p.nama}</div>
-                <div class="text-[11px] text-on-surface-variant">${p.jabatan || '-'}</div>
-            </div>
-        `).join('');
-    }
+    
     dropdown.style.display = 'block';
+    dropdown.innerHTML = '<div class="px-4 py-3 text-on-surface-variant text-[13px]">Mencari...</div>';
+
+    clearTimeout(plhSearchTimeout);
+    plhSearchTimeout = setTimeout(async () => {
+        try {
+            const response = await fetch('/api/pegawai/search?search=' + encodeURIComponent(query));
+            const json = await response.json();
+            
+            // Handle if data is nested inside data.data or just data
+            plhSearchResults = Array.isArray(json.data) ? json.data : (json.data?.data || []);
+            
+            if (plhSearchResults.length === 0) {
+                dropdown.innerHTML = '<div class="px-4 py-3 text-on-surface-variant text-[13px]">Tidak ada hasil</div>';
+            } else {
+                dropdown.innerHTML = plhSearchResults.map((p, i) => `
+                    <div onclick="selectPlhPegawai(${i})" class="px-4 py-2 cursor-pointer hover:bg-primary/5 border-b border-border-subtle last:border-0 transition-colors">
+                        <div class="font-bold text-[13px] text-on-surface">${p.nama}</div>
+                        <div class="text-[11px] text-on-surface-variant">${p.jabatan || '-'}</div>
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Error fetching API:', error);
+            dropdown.innerHTML = '<div class="px-4 py-3 text-error text-[13px]">Gagal mengambil data</div>';
+        }
+    }, 300);
 }
 
 function showPlhDropdown() {

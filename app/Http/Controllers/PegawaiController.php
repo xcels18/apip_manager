@@ -61,4 +61,24 @@ class PegawaiController extends Controller
 
         return view('pegawai.index', compact('pegawai', 'search'));
     }
+
+    /**
+     * Search pegawai data via API for AJAX requests.
+     */
+    public function searchApi(Request $request)
+    {
+        $search = $request->input('search');
+        
+        $response = \Illuminate\Support\Facades\Http::withToken(config('services.pegawai.token'))
+            ->get(config('services.pegawai.url'), [
+                'search' => $search,
+                'per_page' => 15,
+            ]);
+
+        if ($response->successful()) {
+            return response()->json($response->json());
+        }
+
+        return response()->json(['data' => []], 200);
+    }
 }
