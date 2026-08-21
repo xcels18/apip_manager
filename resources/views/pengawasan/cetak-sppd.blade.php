@@ -500,7 +500,7 @@
                             <div>Kabupaten Puncak Jaya,</div>
                             <div class="signature-name">{{ $pengawasan->penandatangan_plh_nama }}</div>
                             @if($pegawaiPlh && (isset($pegawaiPlh->pangkat) || isset($pegawaiPlh->golongan)))
-                            <div class="signature-nip">{{ explode('/', $pegawaiPlh->pangkat ?? $pegawaiPlh->golongan ?? '')[0] }}</div>
+                            <div class="signature-nip">{{ trim(explode('(', $pegawaiPlh->pangkat ?? $pegawaiPlh->golongan ?? '')[0]) }}</div>
                             @endif
                             @if($pegawaiPlh && isset($pegawaiPlh->nip))
                             <div class="signature-nip">NIP. {{ $pegawaiPlh->nip }}</div>
@@ -509,7 +509,7 @@
                             <div>Plh. INSPEKTUR,</div>
                             <div class="signature-name">{{ strtoupper($pengawasan->penandatangan_plh_nama) }}</div>
                             @if($pegawaiPlh && (isset($pegawaiPlh->pangkat) || isset($pegawaiPlh->golongan)))
-                            <div class="signature-nip">{{ explode('/', $pegawaiPlh->pangkat ?? $pegawaiPlh->golongan ?? '')[0] }}</div>
+                            <div class="signature-nip">{{ trim(explode('(', $pegawaiPlh->pangkat ?? $pegawaiPlh->golongan ?? '')[0]) }}</div>
                             @endif
                             @if($pegawaiPlh && isset($pegawaiPlh->nip))
                             <div class="signature-nip">NIP. {{ $pegawaiPlh->nip }}</div>
@@ -748,7 +748,7 @@
                         <br><br><br><br>
                         <div style="text-align: left; font-size: 8pt; font-weight: bold; text-decoration: underline;">{{ $pengawasan->penandatangan_plh_nama }}</div>
                         @if($pegawaiPlh && (isset($pegawaiPlh->pangkat) || isset($pegawaiPlh->golongan)))
-                        <div style="text-align: left; font-size: 8pt;">{{ explode('/', $pegawaiPlh->pangkat ?? $pegawaiPlh->golongan ?? '')[0] }}</div>
+                        <div style="text-align: left; font-size: 8pt;">{{ trim(explode('(', $pegawaiPlh->pangkat ?? $pegawaiPlh->golongan ?? '')[0]) }}</div>
                         @endif
                         @if($pegawaiPlh && isset($pegawaiPlh->nip))
                         <div style="text-align: left; font-size: 8pt;">NIP. {{ $pegawaiPlh->nip }}</div>
@@ -758,7 +758,7 @@
                         <br><br><br>
                         <div style="text-align: left; font-size: 8pt; font-weight: bold; text-decoration: underline;">{{ strtoupper($pengawasan->penandatangan_plh_nama) }}</div>
                         @if($pegawaiPlh && (isset($pegawaiPlh->pangkat) || isset($pegawaiPlh->golongan)))
-                        <div style="text-align: left; font-size: 8pt;">{{ explode('/', $pegawaiPlh->pangkat ?? $pegawaiPlh->golongan ?? '')[0] }}</div>
+                        <div style="text-align: left; font-size: 8pt;">{{ trim(explode('(', $pegawaiPlh->pangkat ?? $pegawaiPlh->golongan ?? '')[0]) }}</div>
                         @endif
                         @if($pegawaiPlh && isset($pegawaiPlh->nip))
                         <div style="text-align: left; font-size: 8pt;">NIP. {{ $pegawaiPlh->nip }}</div>

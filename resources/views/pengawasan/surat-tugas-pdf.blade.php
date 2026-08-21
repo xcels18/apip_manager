@@ -530,7 +530,7 @@
                     <div class="ttd-space"></div>
                     <div class="signature-name">{{ $pengawasan->penandatangan_plh_nama }}</div>
                     @if($pegawaiPlh && (isset($pegawaiPlh->pangkat) || isset($pegawaiPlh->golongan)))
-                    <div class="signature-nip">{{ explode('/', $pegawaiPlh->pangkat ?? $pegawaiPlh->golongan ?? '')[0] }}</div>
+                    <div class="signature-nip">{{ trim(explode('(', $pegawaiPlh->pangkat ?? $pegawaiPlh->golongan ?? '')[0]) }}</div>
                     @endif
                     @if($pegawaiPlh && isset($pegawaiPlh->nip))
                     <div class="signature-nip">NIP. {{ $pegawaiPlh->nip }}</div>
@@ -540,7 +540,7 @@
                     <div class="ttd-space"></div>
                     <div class="signature-name">{{ strtoupper($pengawasan->penandatangan_plh_nama) }}</div>
                     @if($pegawaiPlh && (isset($pegawaiPlh->pangkat) || isset($pegawaiPlh->golongan)))
-                    <div class="signature-nip">{{ explode('/', $pegawaiPlh->pangkat ?? $pegawaiPlh->golongan ?? '')[0] }}</div>
+                    <div class="signature-nip">{{ trim(explode('(', $pegawaiPlh->pangkat ?? $pegawaiPlh->golongan ?? '')[0]) }}</div>
                     @endif
                     @if($pegawaiPlh && isset($pegawaiPlh->nip))
                     <div class="signature-nip">NIP. {{ $pegawaiPlh->nip }}</div>
