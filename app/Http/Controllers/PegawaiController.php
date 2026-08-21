@@ -76,7 +76,18 @@ class PegawaiController extends Controller
             ]);
 
         if ($response->successful()) {
-            return response()->json($response->json());
+            $apiData = $response->json();
+            
+            // Standardize output format
+            $items = [];
+            if (isset($apiData['data'])) {
+                $items = $apiData['data'];
+            } else {
+                // If it's just an array of objects
+                $items = is_array($apiData) ? $apiData : [];
+            }
+            
+            return response()->json(['data' => $items]);
         }
 
         return response()->json(['data' => []], 200);
