@@ -195,6 +195,45 @@
                     </div>
                 </div>
 
+                <!-- Section: Kop Surat -->
+                <div class="flex flex-col gap-4">
+                    <h3 class="font-bold text-on-surface border-b border-border-subtle pb-2">3. Konfigurasi KOP Surat</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[13px] font-bold text-on-surface">Pemerintah Daerah (Baris 1) <span class="text-error">*</span></label>
+                            <input type="text" name="kop_pemerintah" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('kop_pemerintah') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
+                                    value="{{ old('kop_pemerintah', $kopPemerintah ?? 'PEMERINTAH KABUPATEN PUNCAK JAYA') }}" required>
+                            @error('kop_pemerintah')
+                                <span class="text-error text-[11px]">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[13px] font-bold text-on-surface">Nama Instansi (Baris 2) <span class="text-error">*</span></label>
+                            <input type="text" name="kop_instansi" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('kop_instansi') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
+                                    value="{{ old('kop_instansi', $kopInstansi ?? 'INSPEKTORAT') }}" required>
+                            @error('kop_instansi')
+                                <span class="text-error text-[11px]">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[13px] font-bold text-on-surface">Alamat / Jalan (Baris 3) <span class="text-error">*</span></label>
+                            <input type="text" name="kop_jalan" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('kop_jalan') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
+                                    value="{{ old('kop_jalan', $kopJalan ?? 'Jalan Yos Sudarso Kotaraja Telp. (0969) 31014 Fax. (0969) 31015') }}" required>
+                            @error('kop_jalan')
+                                <span class="text-error text-[11px]">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[13px] font-bold text-on-surface">Email / Website (Baris 4) <span class="text-error">*</span></label>
+                            <input type="text" name="kop_email" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('kop_email') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
+                                    value="{{ old('kop_email', $kopEmail ?? 'Email: inspektorat@puncakjayakab.go.id') }}" required>
+                            @error('kop_email')
+                                <span class="text-error text-[11px]">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+
                 <div class="mt-4 pt-4 border-t border-border-subtle flex justify-end">
                     <button type="submit" class="h-10 px-6 rounded-lg font-bold text-[13px] bg-primary text-white hover:bg-primary/90 transition-colors shadow-sm flex items-center justify-center gap-2">
                         <span class="material-symbols-outlined text-[18px]">save</span>

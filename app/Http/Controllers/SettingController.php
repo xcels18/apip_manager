@@ -18,7 +18,12 @@ class SettingController extends Controller
         $definitifNip = \App\Models\SystemSetting::where('key', 'definitif_nip')->first()->value ?? '196612141995031001';
         $definitifJabatan = \App\Models\SystemSetting::where('key', 'definitif_jabatan')->first()->value ?? 'Plt. Inspektur';
 
-        return view('setting.index', compact('apiUrl', 'apiToken', 'definitifNama', 'definitifNip', 'definitifJabatan'));
+        $kopPemerintah = \App\Models\SystemSetting::where('key', 'kop_pemerintah')->first()->value ?? 'PEMERINTAH KABUPATEN PUNCAK JAYA';
+        $kopInstansi = \App\Models\SystemSetting::where('key', 'kop_instansi')->first()->value ?? 'INSPEKTORAT';
+        $kopJalan = \App\Models\SystemSetting::where('key', 'kop_jalan')->first()->value ?? 'Jalan Yos Sudarso Kotaraja Telp. (0969) 31014 Fax. (0969) 31015';
+        $kopEmail = \App\Models\SystemSetting::where('key', 'kop_email')->first()->value ?? 'Email: inspektorat@puncakjayakab.go.id';
+
+        return view('setting.index', compact('apiUrl', 'apiToken', 'definitifNama', 'definitifNip', 'definitifJabatan', 'kopPemerintah', 'kopInstansi', 'kopJalan', 'kopEmail'));
     }
 
     public function updateProfile(Request $request)
@@ -84,12 +89,20 @@ class SettingController extends Controller
             'definitif_nama' => 'required|string',
             'definitif_nip' => 'nullable|string',
             'definitif_jabatan' => 'required|string',
+            'kop_pemerintah' => 'required|string',
+            'kop_instansi' => 'required|string',
+            'kop_jalan' => 'required|string',
+            'kop_email' => 'required|string',
         ], [
             'pegawai_api_url.required' => 'URL API Pegawai harus diisi',
             'pegawai_api_url.url' => 'Format URL tidak valid',
             'pegawai_api_token.required' => 'Token API Pegawai harus diisi',
             'definitif_nama.required' => 'Nama Penandatangan Definitif harus diisi',
             'definitif_jabatan.required' => 'Jabatan Penandatangan Definitif harus diisi',
+            'kop_pemerintah.required' => 'Header Pemerintah harus diisi',
+            'kop_instansi.required' => 'Subheader Instansi harus diisi',
+            'kop_jalan.required' => 'Alamat harus diisi',
+            'kop_email.required' => 'Email harus diisi',
         ]);
 
         \App\Models\SystemSetting::updateOrCreate(
@@ -115,6 +128,26 @@ class SettingController extends Controller
         \App\Models\SystemSetting::updateOrCreate(
             ['key' => 'definitif_jabatan'],
             ['value' => $request->definitif_jabatan]
+        );
+
+        \App\Models\SystemSetting::updateOrCreate(
+            ['key' => 'kop_pemerintah'],
+            ['value' => $request->kop_pemerintah]
+        );
+
+        \App\Models\SystemSetting::updateOrCreate(
+            ['key' => 'kop_instansi'],
+            ['value' => $request->kop_instansi]
+        );
+
+        \App\Models\SystemSetting::updateOrCreate(
+            ['key' => 'kop_jalan'],
+            ['value' => $request->kop_jalan]
+        );
+
+        \App\Models\SystemSetting::updateOrCreate(
+            ['key' => 'kop_email'],
+            ['value' => $request->kop_email]
         );
 
         return redirect()->route('setting.index')

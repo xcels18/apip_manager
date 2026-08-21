@@ -314,6 +314,13 @@
         }
     @endphp
 
+    @php
+        $kopPemerintah = \App\Models\SystemSetting::where('key', 'kop_pemerintah')->first()->value ?? 'PEMERINTAH KABUPATEN PUNCAK JAYA';
+        $kopInstansi = \App\Models\SystemSetting::where('key', 'kop_instansi')->first()->value ?? 'INSPEKTORAT';
+        $kopJalan = \App\Models\SystemSetting::where('key', 'kop_jalan')->first()->value ?? 'Jalan Yos Sudarso Kotaraja Telp. (0969) 31014 Fax. (0969) 31015';
+        $kopEmail = \App\Models\SystemSetting::where('key', 'kop_email')->first()->value ?? 'Email: inspektorat@puncakjayakab.go.id';
+    @endphp
+
     <!-- KOP SURAT -->
     <div class="kop-surat">
         <table class="kop-table">
@@ -324,15 +331,15 @@
                     @endif
                 </td>
                 <td class="kop-text">
-                    <div class="kop-header">PEMERINTAH KABUPATEN PUNCAK JAYA</div>
+                    <div class="kop-header">{{ $kopPemerintah }}</div>
                     @if($isPerjalananDinasInspektur)
                         <div class="kop-subheader">SEKRETARIAT DAERAH</div>
                         <div class="kop-alamat">Jl. Drs.P.A.Coem No.01 Mulia, Puncak Jaya</div>
 
                     @else
-                        <div class="kop-subheader">INSPEKTORAT</div>
-                        <div class="kop-alamat">Jalan Yos Sudarso Kotaraja Telp. (0969) 31014 Fax. (0969) 31015</div>
-                        <div class="kop-alamat">Email: inspektorat@puncakjayakab.go.id</div>
+                        <div class="kop-subheader">{{ $kopInstansi }}</div>
+                        <div class="kop-alamat">{{ $kopJalan }}</div>
+                        <div class="kop-alamat">{{ $kopEmail }}</div>
                     @endif
                 </td>
                 <td class="kop-logo-right"></td>
