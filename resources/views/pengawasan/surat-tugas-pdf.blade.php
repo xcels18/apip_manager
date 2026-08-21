@@ -68,6 +68,7 @@
             font-size: 15pt;
             margin: 0;
             padding: 1px 0;
+            line-height: 1.1;
         }
 
         .kop-subheader {
@@ -75,12 +76,14 @@
             font-weight: bold;
             margin: 0;
             padding: 1px 0;
+            line-height: 1.1;
         }
 
         .kop-alamat {
             font-size: 8pt;
             margin: 0;
             padding: 1px 0;
+            line-height: 1.2;
         }
 
         .judul {
@@ -516,7 +519,7 @@
         <div class="ttd">
             <div class="ttd-content">
                 <div class="ttd-tempat">Dikeluarkan di Mulia</div>
-                <div class="ttd-tempat">Pada Tanggal: {{ $pengawasan->tanggal_st->format('d F Y') }}</div>
+                <div class="ttd-tempat">Pada Tanggal: {{ \Carbon\Carbon::parse($pengawasan->tanggal_st)->locale('id')->translatedFormat('d F Y') }}</div>
                 @if($isPerjalananDinasInspektur && !$isPlh)
                     <div class="ttd-jabatan">Pj. Sekretaris Daerah</div>
                     <div class="ttd-jabatan">Kabupaten Puncak Jaya,</div>

@@ -69,6 +69,7 @@
             font-size: 14pt;
             margin: 0;
             padding: 1px 0;
+            line-height: 1.1;
         }
 
         .kop-subheader {
@@ -76,12 +77,14 @@
             font-weight: bold;
             margin: 0;
             padding: 0px 0;
+            line-height: 1.1;
         }
 
         .kop-alamat {
             font-size: 8pt;
             margin: 0;
             padding: 1px 0;
+            line-height: 1.2;
         }
 
         .info-box {
@@ -486,7 +489,7 @@
                 <td class="footer-left"></td>
                 <td class="footer-right">
                     <div>Dikeluarkan di: Mulia</div>
-                    <div>Pada Tanggal: {{ \Carbon\Carbon::parse($pengawasan->tanggal_st)->format('d F Y') }}</div>
+                    <div>Pada Tanggal: {{ \Carbon\Carbon::parse($pengawasan->tanggal_st)->locale('id')->translatedFormat('d F Y') }}</div>
                     <br>
                     <div class="signature-box">
                         @if($isPerjalananDinasInspektur && !$isPlh)
