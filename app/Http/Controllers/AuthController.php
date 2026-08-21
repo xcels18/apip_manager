@@ -50,8 +50,8 @@ class AuthController extends Controller
     public function dashboard()
     {
         $totalPegawai = 0;
-        $response = \Illuminate\Support\Facades\Http::withToken('pm8AvVAkArBgqck6lP0b2yfBahfuPzsEY9XLNAuG4ed6a0dc')
-            ->get('http://localhost:8000/api/pegawai', ['per_page' => 1]);
+        $response = \Illuminate\Support\Facades\Http::withToken(config('services.pegawai.token'))
+            ->get(config('services.pegawai.url'), ['per_page' => 1]);
             
         if ($response->successful()) {
             $data = $response->json();

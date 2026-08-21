@@ -27,8 +27,8 @@ class PengawasanController extends Controller
         
         if (empty($pegawaiIds)) return;
         
-        $response = \Illuminate\Support\Facades\Http::withToken('pm8AvVAkArBgqck6lP0b2yfBahfuPzsEY9XLNAuG4ed6a0dc')
-            ->get('http://localhost:8000/api/pegawai', ['per_page' => 1000]);
+        $response = \Illuminate\Support\Facades\Http::withToken(config('services.pegawai.token'))
+            ->get(config('services.pegawai.url'), ['per_page' => 1000]);
             
         $pegawaiMap = [];
         if ($response->successful()) {
@@ -56,8 +56,8 @@ class PengawasanController extends Controller
     private function resolvePegawaiPlh($pengawasan)
     {
         if (($pengawasan->penandatangan_type ?? 'definitif') === 'plh' && $pengawasan->penandatangan_plh_nama) {
-             $response = \Illuminate\Support\Facades\Http::withToken('pm8AvVAkArBgqck6lP0b2yfBahfuPzsEY9XLNAuG4ed6a0dc')
-                ->get('http://localhost:8000/api/pegawai', [
+             $response = \Illuminate\Support\Facades\Http::withToken(config('services.pegawai.token'))
+                ->get(config('services.pegawai.url'), [
                     'search' => $pengawasan->penandatangan_plh_nama,
                     'per_page' => 1
                 ]);
@@ -110,8 +110,8 @@ class PengawasanController extends Controller
      */
     public function create()
     {
-        $response = \Illuminate\Support\Facades\Http::withToken('pm8AvVAkArBgqck6lP0b2yfBahfuPzsEY9XLNAuG4ed6a0dc')
-            ->get('http://localhost:8000/api/pegawai', ['per_page' => 1000]);
+        $response = \Illuminate\Support\Facades\Http::withToken(config('services.pegawai.token'))
+            ->get(config('services.pegawai.url'), ['per_page' => 1000]);
         $pegawai = $response->successful() ? collect($response->json()['data'])->map(fn($p) => (object)$p) : collect();
         $tahun = date('Y');
 
@@ -321,8 +321,8 @@ class PengawasanController extends Controller
             
         $this->injectPegawaiData([$pengawasan]);
 
-        $response = \Illuminate\Support\Facades\Http::withToken('pm8AvVAkArBgqck6lP0b2yfBahfuPzsEY9XLNAuG4ed6a0dc')
-            ->get('http://localhost:8000/api/pegawai', ['per_page' => 1000]);
+        $response = \Illuminate\Support\Facades\Http::withToken(config('services.pegawai.token'))
+            ->get(config('services.pegawai.url'), ['per_page' => 1000]);
         $pegawai = $response->successful() ? collect($response->json()['data'])->map(fn($p) => (object)$p) : collect();
         $tahun = date('Y');
 
@@ -910,8 +910,8 @@ class PengawasanController extends Controller
      */
     private function getPegawaiNameFromApi($id)
     {
-        $response = \Illuminate\Support\Facades\Http::withToken('pm8AvVAkArBgqck6lP0b2yfBahfuPzsEY9XLNAuG4ed6a0dc')
-            ->get('http://localhost:8000/api/pegawai', ['per_page' => 1000]);
+        $response = \Illuminate\Support\Facades\Http::withToken(config('services.pegawai.token'))
+            ->get(config('services.pegawai.url'), ['per_page' => 1000]);
         if ($response->successful()) {
             foreach ($response->json()['data'] as $p) {
                 if ($p['id'] == $id) return $p['nama'];

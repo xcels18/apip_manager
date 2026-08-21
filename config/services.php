@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'pegawai' => [
+        'url' => env('PEGAWAI_API_URL', 'http://localhost:8000/api/pegawai'),
+        'token' => env('PEGAWAI_API_TOKEN', ''),
+    ],
+
 ];

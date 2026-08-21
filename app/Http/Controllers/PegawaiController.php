@@ -13,11 +13,13 @@ class PegawaiController extends Controller
     {
         $search = $request->input('search');
         $page = $request->input('page', 1);
+        $perPage = 10;
 
-        $response = \Illuminate\Support\Facades\Http::withToken('pm8AvVAkArBgqck6lP0b2yfBahfuPzsEY9XLNAuG4ed6a0dc')
-            ->get('http://localhost:8000/api/pegawai', [
+        $response = \Illuminate\Support\Facades\Http::withToken(config('services.pegawai.token'))
+            ->get(config('services.pegawai.url'), [
                 'search' => $search,
-                'page' => $page
+                'page' => $page,
+                'per_page' => $perPage,
             ]);
 
         if ($response->successful()) {
