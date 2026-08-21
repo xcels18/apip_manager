@@ -339,8 +339,13 @@
 
                     <div class="flex flex-col gap-2" id="penandatangan_definitif_info" style="{{ old('penandatangan_type', $pengawasan->penandatangan_type ?? 'definitif') == 'definitif' ? '' : 'display:none;' }}">
                         <label class="block text-[13px] font-bold text-on-surface">Penandatangan</label>
-                        <div class="h-10 px-4 rounded-lg bg-primary/5 border border-primary/20 text-primary font-bold flex items-center">
-                            Plt. Inspektur
+                        <div class="px-4 py-2 rounded-lg bg-primary/5 border border-primary/20 flex flex-col justify-center">
+                            @php
+                                $definitifNama = \App\Models\SystemSetting::where('key', 'definitif_nama')->first()->value ?? 'BOTTEN TANDIPADA';
+                                $definitifJabatan = \App\Models\SystemSetting::where('key', 'definitif_jabatan')->first()->value ?? 'Plt. Inspektur';
+                            @endphp
+                            <span class="text-primary font-bold">{{ $definitifNama }}</span>
+                            <span class="text-[11px] text-primary/80 uppercase">{{ $definitifJabatan }}</span>
                         </div>
                     </div>
                 </div>

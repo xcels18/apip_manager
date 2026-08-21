@@ -140,35 +140,65 @@
             <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Khusus Admin</span>
         </div>
         <div class="p-6 bg-white">
-            <form action="{{ route('setting.update-system') }}" method="POST" class="flex flex-col gap-5">
+            <form action="{{ route('setting.update-system') }}" method="POST" class="flex flex-col gap-6">
                 @csrf
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div class="flex flex-col gap-2">
-                        <label class="text-[13px] font-bold text-on-surface">URL Endpoint API Pegawai</label>
-                        <input type="url" name="pegawai_api_url" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('pegawai_api_url') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
-                                value="{{ old('pegawai_api_url', $apiUrl) }}" placeholder="Contoh: http://localhost:8000/api/pegawai" required>
-                        @error('pegawai_api_url')
-                            <span class="text-error text-[11px]">{{ $message }}</span>
-                        @enderror
-                        <p class="text-[11px] text-on-surface-variant">URL lengkap menuju *endpoint* data pegawai di server external.</p>
-                    </div>
+                <!-- Section: Konfigurasi API -->
+                <div class="flex flex-col gap-4">
+                    <h3 class="font-bold text-on-surface border-b border-border-subtle pb-2">1. Konfigurasi API</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[13px] font-bold text-on-surface">URL Endpoint API Pegawai <span class="text-error">*</span></label>
+                            <input type="url" name="pegawai_api_url" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('pegawai_api_url') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
+                                    value="{{ old('pegawai_api_url', $apiUrl) }}" placeholder="Contoh: http://localhost:8000/api/pegawai" required>
+                            @error('pegawai_api_url')
+                                <span class="text-error text-[11px]">{{ $message }}</span>
+                            @enderror
+                        </div>
 
-                    <div class="flex flex-col gap-2">
-                        <label class="text-[13px] font-bold text-on-surface">Bearer Token API</label>
-                        <input type="text" name="pegawai_api_token" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('pegawai_api_token') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors font-mono"
-                                value="{{ old('pegawai_api_token', $apiToken) }}" placeholder="Contoh: pm8AvVAkArBgqck6lP0b2yfBahfuPzsEY9XLNAuG4ed6a0dc" required>
-                        @error('pegawai_api_token')
-                            <span class="text-error text-[11px]">{{ $message }}</span>
-                        @enderror
-                        <p class="text-[11px] text-on-surface-variant">Token otentikasi (Bearer) untuk mengakses API eksternal secara aman.</p>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[13px] font-bold text-on-surface">Bearer Token API <span class="text-error">*</span></label>
+                            <input type="text" name="pegawai_api_token" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('pegawai_api_token') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors font-mono"
+                                    value="{{ old('pegawai_api_token', $apiToken) }}" placeholder="Contoh: pm8AvVAkArBgqck6lP0b2yfBahfuPzsEY9XLNAuG4ed6a0dc" required>
+                            @error('pegawai_api_token')
+                                <span class="text-error text-[11px]">{{ $message }}</span>
+                            @enderror
+                        </div>
                     </div>
                 </div>
 
-                <div class="mt-2 pt-4 border-t border-border-subtle flex justify-end">
+                <!-- Section: Penandatangan Definitif -->
+                <div class="flex flex-col gap-4">
+                    <h3 class="font-bold text-on-surface border-b border-border-subtle pb-2">2. Penandatangan Definitif (Inspektur)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[13px] font-bold text-on-surface">Nama Lengkap <span class="text-error">*</span></label>
+                            <input type="text" name="definitif_nama" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('definitif_nama') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
+                                    value="{{ old('definitif_nama', $definitifNama) }}" required>
+                            @error('definitif_nama')
+                                <span class="text-error text-[11px]">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[13px] font-bold text-on-surface">NIP</label>
+                            <input type="text" name="definitif_nip" class="w-full h-10 px-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary text-body-sm bg-white outline-none transition-colors"
+                                    value="{{ old('definitif_nip', $definitifNip) }}">
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[13px] font-bold text-on-surface">Jabatan <span class="text-error">*</span></label>
+                            <input type="text" name="definitif_jabatan" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('definitif_jabatan') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
+                                    value="{{ old('definitif_jabatan', $definitifJabatan) }}" placeholder="Contoh: Plt. Inspektur" required>
+                            @error('definitif_jabatan')
+                                <span class="text-error text-[11px]">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-border-subtle flex justify-end">
                     <button type="submit" class="h-10 px-6 rounded-lg font-bold text-[13px] bg-primary text-white hover:bg-primary/90 transition-colors shadow-sm flex items-center justify-center gap-2">
-                        <span class="material-symbols-outlined text-[18px]">cloud_sync</span>
-                        Simpan Konfigurasi API
+                        <span class="material-symbols-outlined text-[18px]">save</span>
+                        Simpan Pengaturan Sistem
                     </button>
                 </div>
             </form>

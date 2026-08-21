@@ -13,8 +13,12 @@ class SettingController extends Controller
     {
         $apiUrl = \App\Models\SystemSetting::where('key', 'pegawai_api_url')->first()->value ?? config('services.pegawai.url');
         $apiToken = \App\Models\SystemSetting::where('key', 'pegawai_api_token')->first()->value ?? config('services.pegawai.token');
+        
+        $definitifNama = \App\Models\SystemSetting::where('key', 'definitif_nama')->first()->value ?? 'BOTTEN TANDIPADA';
+        $definitifNip = \App\Models\SystemSetting::where('key', 'definitif_nip')->first()->value ?? '196612141995031001';
+        $definitifJabatan = \App\Models\SystemSetting::where('key', 'definitif_jabatan')->first()->value ?? 'Plt. Inspektur';
 
-        return view('setting.index', compact('apiUrl', 'apiToken'));
+        return view('setting.index', compact('apiUrl', 'apiToken', 'definitifNama', 'definitifNip', 'definitifJabatan'));
     }
 
     public function updateProfile(Request $request)
@@ -77,10 +81,15 @@ class SettingController extends Controller
         $request->validate([
             'pegawai_api_url' => 'required|url',
             'pegawai_api_token' => 'required|string',
+            'definitif_nama' => 'required|string',
+            'definitif_nip' => 'nullable|string',
+            'definitif_jabatan' => 'required|string',
         ], [
             'pegawai_api_url.required' => 'URL API Pegawai harus diisi',
             'pegawai_api_url.url' => 'Format URL tidak valid',
             'pegawai_api_token.required' => 'Token API Pegawai harus diisi',
+            'definitif_nama.required' => 'Nama Penandatangan Definitif harus diisi',
+            'definitif_jabatan.required' => 'Jabatan Penandatangan Definitif harus diisi',
         ]);
 
         \App\Models\SystemSetting::updateOrCreate(
@@ -91,6 +100,21 @@ class SettingController extends Controller
         \App\Models\SystemSetting::updateOrCreate(
             ['key' => 'pegawai_api_token'],
             ['value' => $request->pegawai_api_token]
+        );
+
+        \App\Models\SystemSetting::updateOrCreate(
+            ['key' => 'definitif_nama'],
+            ['value' => $request->definitif_nama]
+        );
+
+        \App\Models\SystemSetting::updateOrCreate(
+            ['key' => 'definitif_nip'],
+            ['value' => $request->definitif_nip]
+        );
+
+        \App\Models\SystemSetting::updateOrCreate(
+            ['key' => 'definitif_jabatan'],
+            ['value' => $request->definitif_jabatan]
         );
 
         return redirect()->route('setting.index')

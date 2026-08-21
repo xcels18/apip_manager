@@ -1,3 +1,9 @@
+@php
+    use Carbon\Carbon;
+    $definitifNama = \App\Models\SystemSetting::where('key', 'definitif_nama')->first()->value ?? 'BOTTEN TANDIPADA,ST.,M.AP';
+    $definitifNip = \App\Models\SystemSetting::where('key', 'definitif_nip')->first()->value ?? '19780218 200012 1 002';
+    $definitifJabatan = \App\Models\SystemSetting::where('key', 'definitif_jabatan')->first()->value ?? 'Plt. Inspektur';
+@endphp
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -334,9 +340,11 @@
         <div class="signature-section">
             <div class="signature-left">
                 <div class="signature-title">&nbsp;</div>
-                <div class="signature-title">Mengetahui, <br>Plt. Inspektur,</div>
-                <div class="signature-name">BOTTEN TANDIPADA,ST.,M.AP</div>
-                <div class="signature-nip">NIP. 19780218 200012 1 002</div>
+                <div class="signature-title">Mengetahui, <br>{{ $definitifJabatan }},</div>
+                <div class="signature-name">{{ strtoupper($definitifNama) }}</div>
+                @if($definitifNip)
+                <div class="signature-nip">NIP. {{ $definitifNip }}</div>
+                @endif
             </div>
             <div class="signature-center">
                 <div class="signature-title">&nbsp;</div>

@@ -1,3 +1,9 @@
+@php
+    use Carbon\Carbon;
+    $definitifNama = \App\Models\SystemSetting::where('key', 'definitif_nama')->first()->value ?? 'BOTTENTANDIPADA, ST., M.AP.';
+    $definitifNip = \App\Models\SystemSetting::where('key', 'definitif_nip')->first()->value ?? '197005102000101006';
+    $definitifJabatan = \App\Models\SystemSetting::where('key', 'definitif_jabatan')->first()->value ?? 'Plt. INSPEKTUR';
+@endphp
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -509,10 +515,11 @@
                             <div class="signature-nip">NIP. {{ $pegawaiPlh->nip }}</div>
                             @endif
                         @else
-                            <div>Plt. INSPEKTUR,</div>
-                            <div class="signature-name">BOTTENTANDIPADA, ST., M.AP.</div>
-                            <div class="signature-nip">Pembina Utama Muda</div>
-                            <div class="signature-nip">NIP. 197005102000101006</div>
+                            <div>{{ strtoupper($definitifJabatan) }},</div>
+                            <div class="signature-name">{{ strtoupper($definitifNama) }}</div>
+                            @if($definitifNip)
+                            <div class="signature-nip">NIP. {{ $definitifNip }}</div>
+                            @endif
                         @endif
                     </div>
                 </td>
@@ -757,11 +764,12 @@
                         <div style="text-align: left; font-size: 8pt;">NIP. {{ $pegawaiPlh->nip }}</div>
                         @endif
                     @else
-                        <div style="text-align: left; font-size: 8pt; font-weight: bold; margin-top: 5px;">Plt. INSPEKTUR,</div>
+                        <div style="text-align: left; font-size: 8pt; font-weight: bold; margin-top: 5px;">{{ strtoupper($definitifJabatan) }},</div>
                         <br><br><br>
-                        <div style="text-align: left; font-size: 8pt; font-weight: bold; text-decoration: underline;">BOTTENTANDIPADA, ST., M.AP.</div>
-                        <div style="text-align: left; font-size: 8pt;">Pembina Utama Muda</div>
-                        <div style="text-align: left; font-size: 8pt;">NIP. 197005102000101006</div>
+                        <div style="text-align: left; font-size: 8pt; font-weight: bold; text-decoration: underline;">{{ strtoupper($definitifNama) }}</div>
+                        @if($definitifNip)
+                        <div style="text-align: left; font-size: 8pt;">NIP. {{ $definitifNip }}</div>
+                        @endif
                     @endif
                 </td>
             </tr>

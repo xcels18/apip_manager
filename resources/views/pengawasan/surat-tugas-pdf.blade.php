@@ -546,11 +546,17 @@
                     <div class="signature-nip">NIP. {{ $pegawaiPlh->nip }}</div>
                     @endif
                 @else
-                    <div class="ttd-jabatan">Plt. INSPEKTUR,</div>
+                    @php
+                        $definitifNama = \App\Models\SystemSetting::where('key', 'definitif_nama')->first()->value ?? 'BOTTENTANDIPADA, ST., M.AP.';
+                        $definitifNip = \App\Models\SystemSetting::where('key', 'definitif_nip')->first()->value ?? '197005102000101006';
+                        $definitifJabatan = \App\Models\SystemSetting::where('key', 'definitif_jabatan')->first()->value ?? 'Plt. INSPEKTUR';
+                    @endphp
+                    <div class="ttd-jabatan">{{ strtoupper($definitifJabatan) }},</div>
                     <div class="ttd-space"></div>
-                    <div class="ttd-nama">BOTTENTANDIPADA, ST., M.AP.</div>
-                    <div class="ttd-detail">Pembina Utama Muda</div>
-                    <div class="ttd-detail">NIP. 197005102000101006</div>
+                    <div class="ttd-nama">{{ strtoupper($definitifNama) }}</div>
+                    @if($definitifNip)
+                    <div class="ttd-detail">NIP. {{ $definitifNip }}</div>
+                    @endif
                 @endif
             </div>
         </div>
