@@ -11,7 +11,10 @@ class SettingController extends Controller
 {
     public function index()
     {
-        return view('setting.index');
+        $apiUrl = \App\Models\SystemSetting::where('key', 'pegawai_api_url')->first()->value ?? config('services.pegawai.url');
+        $apiToken = \App\Models\SystemSetting::where('key', 'pegawai_api_token')->first()->value ?? config('services.pegawai.token');
+
+        return view('setting.index', compact('apiUrl', 'apiToken'));
     }
 
     public function updateProfile(Request $request)
@@ -68,5 +71,29 @@ class SettingController extends Controller
 
         return redirect()->route('setting.index')
             ->with('success', 'Password berhasil diubah!');
+    }
+    public function updateSystem(Request $request)
+    {
+        $request->validate([
+            'pegawai_api_url' => 'required|url',
+            'pegawai_api_token' => 'required|string',
+        ], [
+            'pegawai_api_url.required' => 'URL API Pegawai harus diisi',
+            'pegawai_api_url.url' => 'Format URL tidak valid',
+            'pegawai_api_token.required' => 'Token API Pegawai harus diisi',
+        ]);
+
+        \App\Models\SystemSetting::updateOrCreate(
+            ['key' => 'pegawai_api_url'],
+            ['value' => $request->pegawai_api_url]
+        );
+
+        \App\Models\SystemSetting::updateOrCreate(
+            ['key' => 'pegawai_api_token'],
+            ['value' => $request->pegawai_api_token]
+        );
+
+        return redirect()->route('setting.index')
+            ->with('success', 'Pengaturan sistem berhasil diperbarui!');
     }
 }

@@ -129,5 +129,50 @@
         </div>
 
     </div>
+
+    <!-- System API Settings -->
+    <div class="mt-6 bg-surface-card border border-border-subtle rounded-xl shadow-sm overflow-hidden flex flex-col">
+        <div class="px-6 py-4 border-b border-border-subtle bg-surface-container-lowest flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[24px]">api</span>
+                <h2 class="font-bold text-label-lg text-primary">Pengaturan Integrasi API Pegawai</h2>
+            </div>
+            <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Khusus Admin</span>
+        </div>
+        <div class="p-6 bg-white">
+            <form action="{{ route('setting.update-system') }}" method="POST" class="flex flex-col gap-5">
+                @csrf
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-[13px] font-bold text-on-surface">URL Endpoint API Pegawai</label>
+                        <input type="url" name="pegawai_api_url" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('pegawai_api_url') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
+                                value="{{ old('pegawai_api_url', $apiUrl) }}" placeholder="Contoh: http://localhost:8000/api/pegawai" required>
+                        @error('pegawai_api_url')
+                            <span class="text-error text-[11px]">{{ $message }}</span>
+                        @enderror
+                        <p class="text-[11px] text-on-surface-variant">URL lengkap menuju *endpoint* data pegawai di server external.</p>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label class="text-[13px] font-bold text-on-surface">Bearer Token API</label>
+                        <input type="text" name="pegawai_api_token" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('pegawai_api_token') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors font-mono"
+                                value="{{ old('pegawai_api_token', $apiToken) }}" placeholder="Contoh: pm8AvVAkArBgqck6lP0b2yfBahfuPzsEY9XLNAuG4ed6a0dc" required>
+                        @error('pegawai_api_token')
+                            <span class="text-error text-[11px]">{{ $message }}</span>
+                        @enderror
+                        <p class="text-[11px] text-on-surface-variant">Token otentikasi (Bearer) untuk mengakses API eksternal secara aman.</p>
+                    </div>
+                </div>
+
+                <div class="mt-2 pt-4 border-t border-border-subtle flex justify-end">
+                    <button type="submit" class="h-10 px-6 rounded-lg font-bold text-[13px] bg-primary text-white hover:bg-primary/90 transition-colors shadow-sm flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-[18px]">cloud_sync</span>
+                        Simpan Konfigurasi API
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 @endsection

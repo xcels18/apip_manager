@@ -41,6 +41,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/setting', [App\Http\Controllers\SettingController::class, 'index'])->name('setting.index');
     Route::put('/setting/profile', [App\Http\Controllers\SettingController::class, 'updateProfile'])->name('setting.update-profile');
     Route::put('/setting/password', [App\Http\Controllers\SettingController::class, 'updatePassword'])->name('setting.update-password');
+    Route::post('/setting/system', [App\Http\Controllers\SettingController::class, 'updateSystem'])->name('setting.update-system');
 
     // Test kalender
     Route::get('/test-kalender', function () {
