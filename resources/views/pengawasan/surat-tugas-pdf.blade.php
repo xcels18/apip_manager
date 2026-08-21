@@ -331,6 +331,12 @@
     @endphp
 
     <!-- KOP SURAT -->
+    @php
+        $kopPemerintah = $pengawasan->kop_pemerintah ?? \App\Models\SystemSetting::where('key', 'kop_pemerintah')->first()->value ?? 'PEMERINTAH KABUPATEN PUNCAK JAYA';
+        $kopInstansi = $pengawasan->kop_instansi ?? \App\Models\SystemSetting::where('key', 'kop_instansi')->first()->value ?? 'INSPEKTORAT';
+        $kopJalan = $pengawasan->kop_jalan ?? \App\Models\SystemSetting::where('key', 'kop_jalan')->first()->value ?? 'Jalan Yos Sudarso Kotaraja Telp. (0969) 31014 Fax. (0969) 31015';
+        $kopEmail = $pengawasan->kop_email ?? \App\Models\SystemSetting::where('key', 'kop_email')->first()->value ?? 'Email: inspektorat@puncakjayakab.go.id';
+    @endphp
     <div class="kop-surat">
         <table class="kop-table">
             <tr>
@@ -344,10 +350,6 @@
                         } else {
                             $logoBase64 = null;
                         }
-                        $kopPemerintah = \App\Models\SystemSetting::where('key', 'kop_pemerintah')->first()->value ?? 'PEMERINTAH KABUPATEN PUNCAK JAYA';
-                        $kopInstansi = \App\Models\SystemSetting::where('key', 'kop_instansi')->first()->value ?? 'INSPEKTORAT';
-                        $kopJalan = \App\Models\SystemSetting::where('key', 'kop_jalan')->first()->value ?? 'Jalan Yos Sudarso Kotaraja Telp. (0969) 31014 Fax. (0969) 31015';
-                        $kopEmail = \App\Models\SystemSetting::where('key', 'kop_email')->first()->value ?? 'Email: inspektorat@puncakjayakab.go.id';
                     @endphp
                     @if($logoBase64)
                         <img src="{{ $logoBase64 }}" alt="Logo Puncak Jaya">
@@ -556,9 +558,9 @@
                     @endif
                 @else
                     @php
-                        $definitifNama = \App\Models\SystemSetting::where('key', 'definitif_nama')->first()->value ?? 'BOTTENTANDIPADA, ST., M.AP.';
-                        $definitifNip = \App\Models\SystemSetting::where('key', 'definitif_nip')->first()->value ?? '197005102000101006';
-                        $definitifJabatan = \App\Models\SystemSetting::where('key', 'definitif_jabatan')->first()->value ?? 'Plt. INSPEKTUR';
+                        $definitifNama = $pengawasan->penandatangan_definitif_nama ?? \App\Models\SystemSetting::where('key', 'definitif_nama')->first()->value ?? 'BOTTENTANDIPADA, ST., M.AP.';
+                        $definitifNip = $pengawasan->penandatangan_definitif_nip ?? \App\Models\SystemSetting::where('key', 'definitif_nip')->first()->value ?? '197005102000101006';
+                        $definitifJabatan = $pengawasan->penandatangan_definitif_jabatan ?? \App\Models\SystemSetting::where('key', 'definitif_jabatan')->first()->value ?? 'Plt. INSPEKTUR';
                     @endphp
                     <div class="ttd-jabatan">{{ strtoupper($definitifJabatan) }},</div>
                     <div class="ttd-space"></div>

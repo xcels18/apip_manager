@@ -248,6 +248,14 @@ class PengawasanController extends Controller
         try {
             DB::beginTransaction();
 
+            $definitifNama = \App\Models\SystemSetting::where('key', 'definitif_nama')->first()->value ?? 'BOTTEN TANDIPADA';
+            $definitifNip = \App\Models\SystemSetting::where('key', 'definitif_nip')->first()->value ?? '196612141995031001';
+            $definitifJabatan = \App\Models\SystemSetting::where('key', 'definitif_jabatan')->first()->value ?? 'Plt. Inspektur';
+            $kopPemerintah = \App\Models\SystemSetting::where('key', 'kop_pemerintah')->first()->value ?? 'PEMERINTAH KABUPATEN PUNCAK JAYA';
+            $kopInstansi = \App\Models\SystemSetting::where('key', 'kop_instansi')->first()->value ?? 'INSPEKTORAT';
+            $kopJalan = \App\Models\SystemSetting::where('key', 'kop_jalan')->first()->value ?? 'Jalan Yos Sudarso Kotaraja Telp. (0969) 31014 Fax. (0969) 31015';
+            $kopEmail = \App\Models\SystemSetting::where('key', 'kop_email')->first()->value ?? 'Email: inspektorat@puncakjayakab.go.id';
+
             $pengawasan = Pengawasan::create([
                 'nomor_st' => $nomorST,
                 'tanggal_st' => $validated['tanggal_st'],
@@ -263,6 +271,13 @@ class PengawasanController extends Controller
                 'penandatangan_type' => $validated['penandatangan_type'],
                 'penandatangan_plh_nama' => $validated['penandatangan_type'] === 'plh' ? $validated['penandatangan_plh_nama'] : null,
                 'penandatangan_plh_jabatan' => $validated['penandatangan_type'] === 'plh' ? $validated['penandatangan_plh_jabatan'] : null,
+                'penandatangan_definitif_nama' => $definitifNama,
+                'penandatangan_definitif_nip' => $definitifNip,
+                'penandatangan_definitif_jabatan' => $definitifJabatan,
+                'kop_pemerintah' => $kopPemerintah,
+                'kop_instansi' => $kopInstansi,
+                'kop_jalan' => $kopJalan,
+                'kop_email' => $kopEmail,
             ]);
 
             // Attach anggota
@@ -495,6 +510,14 @@ class PengawasanController extends Controller
                 $fileLaporanPath = $file->storeAs('laporan', $filename, 'public');
             }
 
+            $definitifNama = $pengawasan->penandatangan_definitif_nama ?? \App\Models\SystemSetting::where('key', 'definitif_nama')->first()->value ?? 'BOTTEN TANDIPADA';
+            $definitifNip = $pengawasan->penandatangan_definitif_nip ?? \App\Models\SystemSetting::where('key', 'definitif_nip')->first()->value ?? '196612141995031001';
+            $definitifJabatan = $pengawasan->penandatangan_definitif_jabatan ?? \App\Models\SystemSetting::where('key', 'definitif_jabatan')->first()->value ?? 'Plt. Inspektur';
+            $kopPemerintah = $pengawasan->kop_pemerintah ?? \App\Models\SystemSetting::where('key', 'kop_pemerintah')->first()->value ?? 'PEMERINTAH KABUPATEN PUNCAK JAYA';
+            $kopInstansi = $pengawasan->kop_instansi ?? \App\Models\SystemSetting::where('key', 'kop_instansi')->first()->value ?? 'INSPEKTORAT';
+            $kopJalan = $pengawasan->kop_jalan ?? \App\Models\SystemSetting::where('key', 'kop_jalan')->first()->value ?? 'Jalan Yos Sudarso Kotaraja Telp. (0969) 31014 Fax. (0969) 31015';
+            $kopEmail = $pengawasan->kop_email ?? \App\Models\SystemSetting::where('key', 'kop_email')->first()->value ?? 'Email: inspektorat@puncakjayakab.go.id';
+
             $pengawasan->update([
                 'nomor_st' => $nomorST,
                 'tanggal_st' => $validated['tanggal_st'],
@@ -511,6 +534,13 @@ class PengawasanController extends Controller
                 'penandatangan_type' => $validated['penandatangan_type'],
                 'penandatangan_plh_nama' => $validated['penandatangan_type'] === 'plh' ? $validated['penandatangan_plh_nama'] : null,
                 'penandatangan_plh_jabatan' => $validated['penandatangan_type'] === 'plh' ? $validated['penandatangan_plh_jabatan'] : null,
+                'penandatangan_definitif_nama' => $definitifNama,
+                'penandatangan_definitif_nip' => $definitifNip,
+                'penandatangan_definitif_jabatan' => $definitifJabatan,
+                'kop_pemerintah' => $kopPemerintah,
+                'kop_instansi' => $kopInstansi,
+                'kop_jalan' => $kopJalan,
+                'kop_email' => $kopEmail,
             ]);
 
             // Update personil anggota
