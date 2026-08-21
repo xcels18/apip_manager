@@ -478,7 +478,7 @@
             <td class="value-col">
                 <br>
                 Inspektorat Daerah Kab. Puncak jaya<br>
-                5.102.04.01 (KM)<br>
+                <br>
                 Tahun {{ \Carbon\Carbon::parse($pengawasan->created_at)->format('Y') }}
             </td>
         </tr>
