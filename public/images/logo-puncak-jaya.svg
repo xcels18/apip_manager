@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="95" fill="#1e40af" stroke="#000" stroke-width="3"/>
+  
+  <!-- Inner Circle -->
+  <circle cx="100" cy="100" r="85" fill="none" stroke="#fbbf24" stroke-width="2"/>
+  
+  <!-- Mountain Shape (Puncak) -->
+  <path d="M 100 40 L 130 90 L 115 90 L 130 110 L 70 110 L 85 90 L 70 90 Z" fill="#fbbf24" stroke="#000" stroke-width="1.5"/>
+  
+  <!-- Star -->
+  <path d="M 100 25 L 103 35 L 113 35 L 105 41 L 108 51 L 100 45 L 92 51 L 95 41 L 87 35 L 97 35 Z" fill="#fbbf24"/>
+  
+  <!-- Text PUNCAK -->
+  <text x="100" y="135" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#fbbf24" text-anchor="middle">PUNCAK</text>
+  
+  <!-- Text JAYA -->
+  <text x="100" y="155" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#fbbf24" text-anchor="middle">JAYA</text>
+  
+  <!-- Bottom Text -->
+  <text x="100" y="175" font-family="Arial, sans-serif" font-size="10" fill="#fbbf24" text-anchor="middle">KABUPATEN</text>
+</svg>
+
