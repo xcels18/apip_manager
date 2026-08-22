@@ -17,13 +17,14 @@ class SettingController extends Controller
         $definitifNama = \App\Models\SystemSetting::where('key', 'definitif_nama')->first()->value ?? 'BOTTEN TANDIPADA';
         $definitifNip = \App\Models\SystemSetting::where('key', 'definitif_nip')->first()->value ?? '196612141995031001';
         $definitifJabatan = \App\Models\SystemSetting::where('key', 'definitif_jabatan')->first()->value ?? 'Plt. Inspektur';
+        $definitifPangkat = \App\Models\SystemSetting::where('key', 'definitif_pangkat')->first()->value ?? 'Pembina Utama Muda (IV/c)';
 
         $kopPemerintah = \App\Models\SystemSetting::where('key', 'kop_pemerintah')->first()->value ?? 'PEMERINTAH KABUPATEN PUNCAK JAYA';
         $kopInstansi = \App\Models\SystemSetting::where('key', 'kop_instansi')->first()->value ?? 'INSPEKTORAT';
         $kopJalan = \App\Models\SystemSetting::where('key', 'kop_jalan')->first()->value ?? 'Jalan Yos Sudarso Kotaraja Telp. (0969) 31014 Fax. (0969) 31015';
         $kopEmail = \App\Models\SystemSetting::where('key', 'kop_email')->first()->value ?? 'Email: inspektorat@puncakjayakab.go.id';
 
-        return view('setting.index', compact('apiUrl', 'apiToken', 'definitifNama', 'definitifNip', 'definitifJabatan', 'kopPemerintah', 'kopInstansi', 'kopJalan', 'kopEmail'));
+        return view('setting.index', compact('apiUrl', 'apiToken', 'definitifNama', 'definitifNip', 'definitifJabatan', 'definitifPangkat', 'kopPemerintah', 'kopInstansi', 'kopJalan', 'kopEmail'));
     }
 
     public function updateProfile(Request $request)
@@ -89,6 +90,7 @@ class SettingController extends Controller
             'definitif_nama' => 'required|string',
             'definitif_nip' => 'nullable|string',
             'definitif_jabatan' => 'required|string',
+            'definitif_pangkat' => 'nullable|string',
             'kop_pemerintah' => 'required|string',
             'kop_instansi' => 'required|string',
             'kop_jalan' => 'required|string',
@@ -128,6 +130,11 @@ class SettingController extends Controller
         \App\Models\SystemSetting::updateOrCreate(
             ['key' => 'definitif_jabatan'],
             ['value' => $request->definitif_jabatan]
+        );
+
+        \App\Models\SystemSetting::updateOrCreate(
+            ['key' => 'definitif_pangkat'],
+            ['value' => $request->definitif_pangkat]
         );
 
         \App\Models\SystemSetting::updateOrCreate(

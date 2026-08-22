@@ -3,6 +3,8 @@
     $definitifNama = $pengawasan->penandatangan_definitif_nama ?? \App\Models\SystemSetting::where('key', 'definitif_nama')->first()->value ?? 'BOTTENTANDIPADA, ST., M.AP.';
     $definitifNip = $pengawasan->penandatangan_definitif_nip ?? \App\Models\SystemSetting::where('key', 'definitif_nip')->first()->value ?? '197005102000101006';
     $definitifJabatan = $pengawasan->penandatangan_definitif_jabatan ?? \App\Models\SystemSetting::where('key', 'definitif_jabatan')->first()->value ?? 'Plt. INSPEKTUR';
+    $definitifPangkatRaw = \App\Models\SystemSetting::where('key', 'definitif_pangkat')->first()->value ?? '';
+    $definitifPangkat = trim(explode('(', $definitifPangkatRaw)[0]);
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -777,6 +779,9 @@
                         <div style="text-align: left; font-size: 8pt; font-weight: bold; margin-top: 5px;">{{ strtoupper($definitifJabatan) }},</div>
                         <br><br><br>
                         <div style="text-align: left; font-size: 8pt; font-weight: bold; text-decoration: underline;">{{ strtoupper($definitifNama) }}</div>
+                        @if($definitifPangkat)
+                        <div style="text-align: left; font-size: 8pt;">{{ $definitifPangkat }}</div>
+                        @endif
                         @if($definitifNip)
                         <div style="text-align: left; font-size: 8pt;">NIP. {{ $definitifNip }}</div>
                         @endif

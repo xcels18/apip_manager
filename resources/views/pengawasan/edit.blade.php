@@ -144,58 +144,7 @@
                 </div>
             </div>
 
-            <!-- Section 2: Status & File Laporan -->
-            <div class="px-6 py-4 border-b border-border-subtle bg-surface-container-lowest flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary text-[24px]">task_alt</span>
-                <h2 class="font-bold text-label-lg text-primary">Status & Laporan</h2>
-            </div>
-            
-            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-border-subtle bg-white">
-                <div class="flex flex-col gap-2">
-                    <label for="status" class="block text-[13px] font-bold text-on-surface">Status <span class="text-error">*</span></label>
-                    <div class="relative">
-                        <select
-                            id="status"
-                            name="status"
-                            class="w-full h-10 px-3 pr-8 rounded-lg border {{ $errors->has('status') ? 'border-error focus:ring-error' : 'border-outline-variant focus:ring-primary' }} text-body-sm bg-surface-container-lowest appearance-none cursor-pointer text-on-surface focus:outline-none focus:ring-1 transition-colors"
-                            required
-                        >
-                            <option value="belum_selesai" {{ old('status', $pengawasan->status) == 'belum_selesai' ? 'selected' : '' }}>Belum Selesai</option>
-                            <option value="selesai" {{ old('status', $pengawasan->status) == 'selesai' ? 'selected' : '' }} id="statusSelesaiOption">Selesai</option>
-                        </select>
-                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-outline-variant text-[18px]">expand_more</span>
-                    </div>
-                    @error('status')
-                        <div class="text-error text-[11px] font-medium flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">error</span>{{ $message }}</div>
-                    @enderror
-                    <div id="statusHelpText" style="display: none;" class="mt-1 flex items-center gap-1 text-[11px] font-medium text-amber-600">
-                        <span class="material-symbols-outlined text-[14px]">warning</span> Status hanya bisa diubah menjadi "Selesai" jika sudah mengupload file laporan
-                    </div>
-                </div>
 
-                <div class="flex flex-col gap-2">
-                    <label for="file_laporan" class="block text-[13px] font-bold text-on-surface">File Laporan (PDF)</label>
-                    <input
-                        type="file"
-                        id="file_laporan"
-                        name="file_laporan"
-                        class="w-full text-body-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-[13px] file:font-bold file:bg-surface-container-high file:text-primary hover:file:bg-surface-container-highest file:cursor-pointer transition-colors border border-outline-variant rounded-lg bg-surface-container-lowest {{ $errors->has('file_laporan') ? 'border-error' : '' }}"
-                        accept=".pdf"
-                    >
-                    @if($pengawasan->file_laporan)
-                        <div class="text-[12px] text-on-surface-variant flex items-center gap-1 mt-1">
-                            File saat ini:
-                            <a href="{{ asset('storage/' . $pengawasan->file_laporan) }}" target="_blank" class="text-primary font-bold hover:underline">
-                                {{ basename($pengawasan->file_laporan) }}
-                            </a>
-                        </div>
-                    @endif
-                    @error('file_laporan')
-                        <div class="text-error text-[11px] font-medium flex items-center gap-1 mt-1"><span class="material-symbols-outlined text-[14px]">error</span>{{ $message }}</div>
-                    @enderror
-                    <div class="text-[11px] text-on-surface-variant mt-1">Upload file laporan dalam format PDF (max 10MB)</div>
-                </div>
-            </div>
 
             <!-- Section 3: Detail Penugasan -->
             <div class="px-6 py-4 border-b border-border-subtle bg-surface-container-lowest flex items-center gap-2">
@@ -658,33 +607,6 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Status change listener
-document.addEventListener('DOMContentLoaded', function() {
-    const statusSelect = document.getElementById('status');
-    const statusHelpText = document.getElementById('statusHelpText');
-    const fileInput = document.getElementById('file_laporan');
-    const hasExistingFile = {{ $pengawasan->file_laporan ? 'true' : 'false' }};
-    
-    if(statusSelect && statusHelpText) {
-        statusSelect.addEventListener('change', function() {
-            if(this.value === 'selesai' && !hasExistingFile && !fileInput.files.length) {
-                statusHelpText.style.display = 'flex';
-                this.classList.add('border-amber-500', 'focus:ring-amber-500');
-            } else {
-                statusHelpText.style.display = 'none';
-                this.classList.remove('border-amber-500', 'focus:ring-amber-500');
-            }
-        });
-        
-        if(fileInput) {
-            fileInput.addEventListener('change', function() {
-                if(statusSelect.value === 'selesai' && this.files.length > 0) {
-                    statusHelpText.style.display = 'none';
-                    statusSelect.classList.remove('border-amber-500', 'focus:ring-amber-500');
-                }
-            });
-        }
-    }
-});
+
 </script>
 @endpush

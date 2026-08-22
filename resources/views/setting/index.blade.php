@@ -131,117 +131,111 @@
     </div>
 
     <!-- System API Settings -->
-    <div class="mt-6 bg-surface-card border border-border-subtle rounded-xl shadow-sm overflow-hidden flex flex-col">
-        <div class="px-6 py-4 border-b border-border-subtle bg-surface-container-lowest flex items-center justify-between gap-2">
-            <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary text-[24px]">api</span>
-                <h2 class="font-bold text-label-lg text-primary">Pengaturan Integrasi API Pegawai</h2>
-            </div>
-            <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Khusus Admin</span>
+    <div class="mt-8 mb-4">
+        <div class="flex items-center gap-2 mb-4">
+            <span class="material-symbols-outlined text-primary text-[24px]">admin_panel_settings</span>
+            <h2 class="font-bold text-headline-sm text-primary">Pengaturan Sistem</h2>
+            <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider ml-2">Khusus Admin</span>
         </div>
-        <div class="p-6 bg-white">
-            <form action="{{ route('setting.update-system') }}" method="POST" class="flex flex-col gap-6">
-                @csrf
 
-                <!-- Section: Konfigurasi API -->
-                <div class="flex flex-col gap-4">
-                    <h3 class="font-bold text-on-surface border-b border-border-subtle pb-2">1. Konfigurasi API</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div class="flex flex-col gap-2">
-                            <label class="text-[13px] font-bold text-on-surface">URL Endpoint API Pegawai <span class="text-error">*</span></label>
-                            <input type="url" name="pegawai_api_url" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('pegawai_api_url') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
-                                    value="{{ old('pegawai_api_url', $apiUrl) }}" placeholder="Contoh: http://localhost:8000/api/pegawai" required>
-                            @error('pegawai_api_url')
-                                <span class="text-error text-[11px]">{{ $message }}</span>
-                            @enderror
-                        </div>
-
-                        <div class="flex flex-col gap-2">
-                            <label class="text-[13px] font-bold text-on-surface">Bearer Token API <span class="text-error">*</span></label>
-                            <input type="text" name="pegawai_api_token" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('pegawai_api_token') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors font-mono"
-                                    value="{{ old('pegawai_api_token', $apiToken) }}" placeholder="Contoh: pm8AvVAkArBgqck6lP0b2yfBahfuPzsEY9XLNAuG4ed6a0dc" required>
-                            @error('pegawai_api_token')
-                                <span class="text-error text-[11px]">{{ $message }}</span>
-                            @enderror
-                        </div>
+        <form action="{{ route('setting.update-system') }}" method="POST">
+            @csrf
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Konfigurasi KOP Surat -->
+                <div class="bg-surface-card border border-border-subtle rounded-xl shadow-sm overflow-hidden flex flex-col">
+                    <div class="px-6 py-4 border-b border-border-subtle bg-surface-container-lowest flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary text-[20px]">description</span>
+                        <h3 class="font-bold text-label-lg text-primary">KOP Surat</h3>
                     </div>
-                </div>
-
-                <!-- Section: Penandatangan Definitif -->
-                <div class="flex flex-col gap-4">
-                    <h3 class="font-bold text-on-surface border-b border-border-subtle pb-2">2. Penandatangan Definitif (Inspektur)</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        <div class="flex flex-col gap-2">
-                            <label class="text-[13px] font-bold text-on-surface">Nama Lengkap <span class="text-error">*</span></label>
-                            <input type="text" name="definitif_nama" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('definitif_nama') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
-                                    value="{{ old('definitif_nama', $definitifNama) }}" required>
-                            @error('definitif_nama')
-                                <span class="text-error text-[11px]">{{ $message }}</span>
-                            @enderror
-                        </div>
-                        <div class="flex flex-col gap-2">
-                            <label class="text-[13px] font-bold text-on-surface">NIP</label>
-                            <input type="text" name="definitif_nip" class="w-full h-10 px-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary text-body-sm bg-white outline-none transition-colors"
-                                    value="{{ old('definitif_nip', $definitifNip) }}">
-                        </div>
-                        <div class="flex flex-col gap-2">
-                            <label class="text-[13px] font-bold text-on-surface">Jabatan <span class="text-error">*</span></label>
-                            <input type="text" name="definitif_jabatan" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('definitif_jabatan') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
-                                    value="{{ old('definitif_jabatan', $definitifJabatan) }}" placeholder="Contoh: Plt. Inspektur" required>
-                            @error('definitif_jabatan')
-                                <span class="text-error text-[11px]">{{ $message }}</span>
-                            @enderror
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Section: Kop Surat -->
-                <div class="flex flex-col gap-4">
-                    <h3 class="font-bold text-on-surface border-b border-border-subtle pb-2">3. Konfigurasi KOP Surat</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="p-6 bg-white flex flex-col gap-4 flex-1">
                         <div class="flex flex-col gap-2">
                             <label class="text-[13px] font-bold text-on-surface">Pemerintah Daerah (Baris 1) <span class="text-error">*</span></label>
                             <input type="text" name="kop_pemerintah" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('kop_pemerintah') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
                                     value="{{ old('kop_pemerintah', $kopPemerintah ?? 'PEMERINTAH KABUPATEN PUNCAK JAYA') }}" required>
-                            @error('kop_pemerintah')
-                                <span class="text-error text-[11px]">{{ $message }}</span>
-                            @enderror
                         </div>
                         <div class="flex flex-col gap-2">
                             <label class="text-[13px] font-bold text-on-surface">Nama Instansi (Baris 2) <span class="text-error">*</span></label>
                             <input type="text" name="kop_instansi" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('kop_instansi') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
                                     value="{{ old('kop_instansi', $kopInstansi ?? 'INSPEKTORAT') }}" required>
-                            @error('kop_instansi')
-                                <span class="text-error text-[11px]">{{ $message }}</span>
-                            @enderror
                         </div>
                         <div class="flex flex-col gap-2">
                             <label class="text-[13px] font-bold text-on-surface">Alamat / Jalan (Baris 3) <span class="text-error">*</span></label>
                             <input type="text" name="kop_jalan" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('kop_jalan') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
                                     value="{{ old('kop_jalan', $kopJalan ?? 'Jalan Yos Sudarso Kotaraja Telp. (0969) 31014 Fax. (0969) 31015') }}" required>
-                            @error('kop_jalan')
-                                <span class="text-error text-[11px]">{{ $message }}</span>
-                            @enderror
                         </div>
                         <div class="flex flex-col gap-2">
                             <label class="text-[13px] font-bold text-on-surface">Email / Website (Baris 4) <span class="text-error">*</span></label>
                             <input type="text" name="kop_email" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('kop_email') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
                                     value="{{ old('kop_email', $kopEmail ?? 'Email: inspektorat@puncakjayakab.go.id') }}" required>
-                            @error('kop_email')
-                                <span class="text-error text-[11px]">{{ $message }}</span>
-                            @enderror
                         </div>
                     </div>
                 </div>
 
-                <div class="mt-4 pt-4 border-t border-border-subtle flex justify-end">
-                    <button type="submit" class="h-10 px-6 rounded-lg font-bold text-[13px] bg-primary text-white hover:bg-primary/90 transition-colors shadow-sm flex items-center justify-center gap-2">
-                        <span class="material-symbols-outlined text-[18px]">save</span>
-                        Simpan Pengaturan Sistem
-                    </button>
+                <!-- Penandatangan Definitif & API Integrasi -->
+                <div class="flex flex-col gap-6">
+                    <!-- Penandatangan Definitif -->
+                    <div class="bg-surface-card border border-border-subtle rounded-xl shadow-sm overflow-hidden flex flex-col">
+                        <div class="px-6 py-4 border-b border-border-subtle bg-surface-container-lowest flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary text-[20px]">signature</span>
+                            <h3 class="font-bold text-label-lg text-primary">Penandatangan Definitif</h3>
+                        </div>
+                        <div class="p-6 bg-white flex flex-col gap-4">
+                            <div class="flex flex-col gap-2">
+                                <label class="text-[13px] font-bold text-on-surface">Nama Lengkap <span class="text-error">*</span></label>
+                                <input type="text" name="definitif_nama" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('definitif_nama') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
+                                        value="{{ old('definitif_nama', $definitifNama) }}" required>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="flex flex-col gap-2">
+                                    <label class="text-[13px] font-bold text-on-surface">NIP</label>
+                                    <input type="text" name="definitif_nip" class="w-full h-10 px-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary text-body-sm bg-white outline-none transition-colors"
+                                            value="{{ old('definitif_nip', $definitifNip) }}">
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <label class="text-[13px] font-bold text-on-surface">Jabatan <span class="text-error">*</span></label>
+                                    <input type="text" name="definitif_jabatan" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('definitif_jabatan') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
+                                            value="{{ old('definitif_jabatan', $definitifJabatan) }}" placeholder="Contoh: Plt. Inspektur" required>
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <label class="text-[13px] font-bold text-on-surface">Pangkat / Golongan <span class="text-error">*</span></label>
+                                <input type="text" name="definitif_pangkat" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('definitif_pangkat') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
+                                        value="{{ old('definitif_pangkat', $definitifPangkat ?? 'Pembina Utama Muda (IV/c)') }}" placeholder="Contoh: Pembina Utama Muda (IV/c)" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Konfigurasi API -->
+                    <div class="bg-surface-card border border-border-subtle rounded-xl shadow-sm overflow-hidden flex flex-col">
+                        <div class="px-6 py-4 border-b border-border-subtle bg-surface-container-lowest flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary text-[20px]">api</span>
+                            <h3 class="font-bold text-label-lg text-primary">Integrasi API Pegawai</h3>
+                        </div>
+                        <div class="p-6 bg-white flex flex-col gap-4">
+                            <div class="flex flex-col gap-2">
+                                <label class="text-[13px] font-bold text-on-surface">URL Endpoint API <span class="text-error">*</span></label>
+                                <input type="url" name="pegawai_api_url" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('pegawai_api_url') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
+                                        value="{{ old('pegawai_api_url', $apiUrl) }}" placeholder="Contoh: http://localhost:8000/api/pegawai" required>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <label class="text-[13px] font-bold text-on-surface">Bearer Token <span class="text-error">*</span></label>
+                                <input type="text" name="pegawai_api_token" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('pegawai_api_token') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors font-mono"
+                                        value="{{ old('pegawai_api_token', $apiToken) }}" required>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </form>
-        </div>
+            </div>
+
+            <!-- Sticky Save Button -->
+            <div class="mt-6 flex justify-end">
+                <button type="submit" class="h-12 px-8 rounded-lg font-bold text-[14px] bg-primary text-white hover:bg-primary/90 transition-colors shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-[20px]">save</span>
+                    Simpan Seluruh Pengaturan Sistem
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 @endsection

@@ -189,14 +189,17 @@
                             @endif
                         </div>
 
-                        <div class="flex gap-2 pt-4 border-t border-border-subtle mt-auto">
-                            <a href="{{ route('pengawasan.show', $item->id) }}" class="flex-1 flex items-center justify-center gap-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 py-2 rounded-lg text-[12px] font-bold transition-colors">
+                        <div class="grid grid-cols-2 gap-2 pt-4 border-t border-border-subtle mt-auto">
+                            <button type="button" onclick="openStatusModal({{ $item->id }}, '{{ $item->status }}', '{{ $item->file_laporan ? 'true' : 'false' }}', '{{ $item->file_laporan ? Storage::url($item->file_laporan) : '' }}')" class="w-full flex items-center justify-center gap-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 py-2 rounded-lg text-[12px] font-bold transition-colors">
+                                <span class="material-symbols-outlined text-[16px]">task_alt</span> Status
+                            </button>
+                            <a href="{{ route('pengawasan.show', $item->id) }}" class="w-full flex items-center justify-center gap-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 py-2 rounded-lg text-[12px] font-bold transition-colors">
                                 <span class="material-symbols-outlined text-[16px]">visibility</span> Detail
                             </a>
-                            <a href="{{ route('pengawasan.edit', $item->id) }}" class="flex-1 flex items-center justify-center gap-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 py-2 rounded-lg text-[12px] font-bold transition-colors">
+                            <a href="{{ route('pengawasan.edit', $item->id) }}" class="w-full flex items-center justify-center gap-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 py-2 rounded-lg text-[12px] font-bold transition-colors">
                                 <span class="material-symbols-outlined text-[16px]">edit</span> Ubah
                             </a>
-                            <form action="{{ route('pengawasan.destroy', $item->id) }}" method="POST" class="flex-1" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+                            <form action="{{ route('pengawasan.destroy', $item->id) }}" method="POST" class="w-full" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="w-full flex items-center justify-center gap-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 py-2 rounded-lg text-[12px] font-bold transition-colors">
@@ -246,7 +249,10 @@
                                     {{ $item->status_label }}
                                 </span>
                             </div>
-                            <div class="flex items-center gap-1 w-full md:w-auto">
+                            <div class="flex items-center gap-1 w-full md:w-auto mt-2 md:mt-0">
+                                <button type="button" onclick="openStatusModal({{ $item->id }}, '{{ $item->status }}', '{{ $item->file_laporan ? 'true' : 'false' }}', '{{ $item->file_laporan ? Storage::url($item->file_laporan) : '' }}')" class="w-8 h-8 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-100 flex items-center justify-center transition-colors" title="Update Status">
+                                    <span class="material-symbols-outlined text-[16px]">task_alt</span>
+                                </button>
                                 <a href="{{ route('pengawasan.show', $item->id) }}" class="w-8 h-8 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center transition-colors" title="Detail">
                                     <span class="material-symbols-outlined text-[16px]">visibility</span>
                                 </a>
@@ -281,11 +287,125 @@
     @endif
 </div>
 
+<!-- Status Update Modal -->
+<div id="statusModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center">
+    <div class="bg-surface-card w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-[scale-in_0.2s_ease-out]">
+        <div class="px-6 py-4 border-b border-border-subtle bg-surface-container-lowest flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary text-[24px]">task_alt</span>
+            <h2 class="font-bold text-label-lg text-primary">Update Status & Laporan</h2>
+        </div>
+        
+        <form id="statusForm" method="POST" enctype="multipart/form-data" action="">
+            @csrf
+            
+            <div class="p-6 flex flex-col gap-5">
+                <div class="flex flex-col gap-2">
+                    <label for="modal_status" class="block text-[13px] font-bold text-on-surface">Status <span class="text-error">*</span></label>
+                    <div class="relative">
+                        <select
+                            id="modal_status"
+                            name="status"
+                            class="w-full h-10 px-3 pr-8 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary text-body-sm bg-surface-container-lowest appearance-none cursor-pointer text-on-surface focus:outline-none transition-colors"
+                            required
+                        >
+                            <option value="belum_selesai">Belum Selesai</option>
+                            <option value="selesai">Selesai</option>
+                        </select>
+                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-outline-variant text-[18px]">expand_more</span>
+                    </div>
+                    <div id="modalStatusHelpText" style="display: none;" class="mt-1 flex items-center gap-1 text-[11px] font-medium text-amber-600">
+                        <span class="material-symbols-outlined text-[14px]">warning</span> Status hanya bisa diubah menjadi "Selesai" jika sudah mengupload file laporan
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label for="modal_file_laporan" class="block text-[13px] font-bold text-on-surface">Upload File Laporan <span class="text-[11px] font-normal text-on-surface-variant">(Format: PDF, Maks: 10MB)</span></label>
+                    
+                    <div id="modalExistingFile" class="hidden mb-2 p-3 bg-surface-container-lowest rounded-lg border border-border-subtle flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-[16px] text-rose-600">picture_as_pdf</span>
+                            </div>
+                            <div>
+                                <p class="text-[12px] font-bold text-on-surface">File Saat Ini</p>
+                                <a id="modalExistingFileLink" href="#" target="_blank" class="text-[11px] text-primary hover:underline">Lihat File</a>
+                            </div>
+                        </div>
+                        <span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Terupload</span>
+                    </div>
+
+                    <input
+                        type="file"
+                        id="modal_file_laporan"
+                        name="file_laporan"
+                        accept=".pdf"
+                        class="w-full text-body-sm text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-[13px] file:font-bold file:bg-primary file:text-white hover:file:bg-primary/90 file:cursor-pointer transition-colors border border-outline-variant rounded-lg bg-surface-container-lowest"
+                    >
+                </div>
+            </div>
+            
+            <div class="px-6 py-4 bg-surface-container-lowest border-t border-border-subtle flex justify-end gap-3">
+                <button type="button" onclick="closeStatusModal()" class="px-4 py-2 text-[13px] font-bold text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg transition-colors">Batal</button>
+                <button type="submit" class="px-6 py-2 bg-primary hover:bg-primary/90 text-white text-[13px] font-bold rounded-lg transition-colors flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[18px]">save</span> Simpan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
 <script>
     const STORAGE_KEY = 'pengawasan_view';
+
+    // Status Modal Logic
+    const statusModal = document.getElementById('statusModal');
+    const statusForm = document.getElementById('statusForm');
+    const modalStatus = document.getElementById('modal_status');
+    const modalFileLaporan = document.getElementById('modal_file_laporan');
+    const modalStatusHelpText = document.getElementById('modalStatusHelpText');
+    const modalExistingFile = document.getElementById('modalExistingFile');
+    const modalExistingFileLink = document.getElementById('modalExistingFileLink');
+    let currentHasFile = false;
+
+    function openStatusModal(id, currentStatus, hasFile, fileUrl) {
+        statusForm.action = `/pengawasan/${id}/status`;
+        modalStatus.value = currentStatus;
+        currentHasFile = hasFile === 'true' || hasFile === true;
+        
+        if (currentHasFile && fileUrl) {
+            modalExistingFile.classList.remove('hidden');
+            modalExistingFileLink.href = fileUrl;
+        } else {
+            modalExistingFile.classList.add('hidden');
+        }
+
+        checkStatusValidation();
+        statusModal.classList.remove('hidden');
+    }
+
+    function closeStatusModal() {
+        statusModal.classList.add('hidden');
+        statusForm.reset();
+        modalExistingFile.classList.add('hidden');
+        modalStatus.classList.remove('border-error', 'focus:ring-error');
+        modalStatusHelpText.style.display = 'none';
+    }
+
+    function checkStatusValidation() {
+        if (modalStatus.value === 'selesai' && !currentHasFile && !modalFileLaporan.files.length) {
+            modalStatusHelpText.style.display = 'flex';
+            modalStatus.classList.add('border-error', 'focus:ring-error');
+        } else {
+            modalStatusHelpText.style.display = 'none';
+            modalStatus.classList.remove('border-error', 'focus:ring-error');
+        }
+    }
+
+    modalStatus.addEventListener('change', checkStatusValidation);
+    modalFileLaporan.addEventListener('change', checkStatusValidation);
 
     function setView(mode) {
         const card = document.getElementById('viewCard');

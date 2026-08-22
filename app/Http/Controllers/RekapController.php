@@ -27,10 +27,6 @@ class RekapController extends Controller
 
         // Build query
         $query = Pengawasan::with([
-            'penanggungJawab',
-            'pengendaliTeknis',
-            'ketuaTim',
-            'anggota',
             'dasarHukum'
         ]);
 
@@ -51,6 +47,9 @@ class RekapController extends Controller
         }
 
         $pengawasanList = $query->orderBy('tanggal_st', 'desc')->get();
+        
+        // Inject Pegawai Data from API
+        app(PengawasanController::class)->injectPegawaiData($pengawasanList);
 
         // Create spreadsheet
         $spreadsheet = new Spreadsheet();

@@ -5,15 +5,15 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PegawaiController;
 use App\Http\Controllers\PengawasanController;
 
-// Redirect root ke login
+// Landing Page
 Route::get('/', function () {
-    return redirect('/login');
+    return view('welcome');
 });
 
 // Authentication routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Protected routes
 Route::middleware('auth')->group(function () {
@@ -25,6 +25,7 @@ Route::middleware('auth')->group(function () {
 
     // Pengawasan
     Route::resource('pengawasan', PengawasanController::class);
+    Route::post('/pengawasan/{id}/status', [PengawasanController::class, 'updateStatus'])->name('pengawasan.update-status');
     Route::get('/pengawasan/{id}/cetak-surat-tugas', [PengawasanController::class, 'cetakSuratTugas'])->name('pengawasan.cetak-surat-tugas');
     Route::get('/pengawasan/{id}/cetak-sppd/{pegawai_id}', [PengawasanController::class, 'cetakSppd'])->name('pengawasan.cetak-sppd');
     Route::get('/pengawasan/{id}/cetak-kwitansi/{pegawai_id}', [PengawasanController::class, 'cetakKwitansi'])->name('pengawasan.cetak-kwitansi');
@@ -44,8 +45,4 @@ Route::middleware('auth')->group(function () {
     Route::put('/setting/password', [App\Http\Controllers\SettingController::class, 'updatePassword'])->name('setting.update-password');
     Route::post('/setting/system', [App\Http\Controllers\SettingController::class, 'updateSystem'])->name('setting.update-system');
 
-    // Test kalender
-    Route::get('/test-kalender', function () {
-        return view('test-kalender');
-    });
 });

@@ -213,11 +213,176 @@
         </div>
     </div>
 </div>
+<!-- Calendar Section -->
+<div class="w-full mt-6 animate-fadeInUp" style="animation-delay:0.4s">
+    <div class="bg-surface border border-border-subtle rounded-2xl overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.02)] w-full p-6 flex flex-col">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                <span class="material-symbols-outlined text-[18px]">calendar_month</span>
+            </div>
+            <h2 class="text-headline-md font-bold text-on-surface tracking-tight">Jadwal Penugasan</h2>
+        </div>
+        
+        <div id="calendar" class="w-full min-h-[500px]"></div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+<!-- Tippy.js for beautiful tooltips -->
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+<link rel="stylesheet" href="https://unpkg.com/tippy.js@6/animations/scale.css"/>
+
 <script>
     const d = new Date();
     document.getElementById('today-date').textContent = d.toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            themeSystem: 'standard',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek'
+            },
+            locale: 'id',
+            buttonText: {
+                today: 'Hari Ini',
+                month: 'Bulan',
+                week: 'Minggu'
+            },
+            events: '/api/kalender-data',
+            eventClick: function(info) {
+                if (info.event.url) {
+                    window.location.href = info.event.url;
+                    info.jsEvent.preventDefault();
+                }
+            },
+            eventDidMount: function(info) {
+                // Remove native title to prevent double tooltips
+                info.el.removeAttribute('title');
+                
+                // Create elegant HTML tooltip content
+                let st = info.event.title;
+                let uraian = info.event.extendedProps.uraian || '-';
+                let status = info.event.extendedProps.status_label || '';
+                let statusColor = info.event.classNames.includes('event-selesai') ? 'text-emerald-400' : 'text-indigo-400';
+                
+                let tooltipContent = `
+                    <div class="text-left p-1">
+                        <div class="font-bold text-sm mb-1">${st}</div>
+                        <div class="text-xs text-gray-300 mb-2 leading-relaxed">${uraian}</div>
+                        <div class="text-xs font-semibold ${statusColor}">${status}</div>
+                    </div>
+                `;
+
+                // Initialize Tippy.js
+                tippy(info.el, {
+                    content: tooltipContent,
+                    allowHTML: true,
+                    animation: 'scale',
+                    theme: 'translucent',
+                    placement: 'top',
+                    arrow: true,
+                    delay: [50, 0]
+                });
+            },
+            height: 'auto',
+            aspectRatio: 2.2,
+        });
+        calendar.render();
+    });
 </script>
+<style>
+    /* FullCalendar customizations */
+    .fc {
+        --fc-border-color: rgba(0, 0, 0, 0.06);
+        --fc-button-text-color: #fff;
+        --fc-button-bg-color: #4f46e5;
+        --fc-button-border-color: #4f46e5;
+        --fc-button-hover-bg-color: #4338ca;
+        --fc-button-hover-border-color: #4338ca;
+        --fc-button-active-bg-color: #3730a3;
+        --fc-button-active-border-color: #3730a3;
+        --fc-today-bg-color: rgba(79, 70, 229, 0.03);
+        font-family: inherit;
+    }
+    .fc .fc-toolbar-title {
+        font-weight: 800;
+        font-size: 1.125rem;
+        color: #1e293b;
+    }
+    .fc .fc-button {
+        border-radius: 0.5rem;
+        padding: 0.4rem 1rem;
+        font-weight: 600;
+        text-transform: capitalize;
+        transition: all 0.2s;
+        font-size: 0.875rem;
+    }
+    .fc-theme-standard th {
+        padding: 0.875rem 0;
+        background-color: #ffffff;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .fc-daygrid-day-number {
+        font-weight: 600;
+        color: #64748b;
+        padding: 8px !important;
+        font-size: 0.875rem;
+    }
+    
+    /* Minimalist Event Markings (Ribbons) */
+    .fc-event {
+        border-radius: 4px !important;
+        height: 6px !important; /* Make it a thin ribbon */
+        margin: 2px 6px !important; /* Space from edges */
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        cursor: pointer;
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none !important;
+        overflow: hidden;
+    }
+    .fc-event:hover {
+        transform: scaleY(1.5);
+        z-index: 10 !important;
+    }
+    /* Hide the text inside events completely */
+    .fc-event-main, .fc-event-title, .fc-event-time {
+        display: none !important;
+    }
+    .fc-daygrid-event-dot {
+        display: none !important;
+    }
+    
+    /* Colors */
+    .event-selesai {
+        background: #10b981 !important; /* Solid emerald */
+    }
+    .event-belum-selesai {
+        background: #6366f1 !important; /* Solid indigo */
+    }
+
+    /* Tippy Theme Customization */
+    .tippy-box[data-theme~='translucent'] {
+        background-color: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(8px);
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .tippy-box[data-theme~='translucent'][data-placement^='top'] > .tippy-arrow::before {
+        border-top-color: rgba(15, 23, 42, 0.95);
+    }
+</style>
 @endpush
