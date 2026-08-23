@@ -52,7 +52,7 @@
     <nav class="relative z-10 w-full py-6">
         <div class="max-w-7xl mx-auto px-6 lg:px-8 flex justify-between items-center">
             <div class="flex items-center gap-4">
-                <img src="{{ asset('images/logo_puja.png') }}" alt="Logo Puncak Jaya" class="w-12 h-auto drop-shadow-md">
+                <img src="{{ asset('images/logo_inspektorat.png') }}" alt="Logo Inspektorat" class="w-12 h-auto drop-shadow-md">
                 <div class="flex flex-col">
                     <span class="font-bold text-lg leading-none tracking-wide text-gray-100 uppercase">Inspektorat</span>
                     <span class="text-[10px] tracking-widest text-sky-400 font-semibold uppercase">Puncak Jaya</span>

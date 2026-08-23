@@ -128,8 +128,8 @@
     <div class="w-full max-w-md">
         <!-- Logo -->
         <div class="flex flex-col items-center mb-8">
-            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center mb-4 shadow-lg shadow-primary/30 text-white transform transition-transform hover:rotate-12 cursor-pointer">
-                <span class="material-symbols-outlined text-[32px]">admin_panel_settings</span>
+            <div class="w-24 h-24 mb-4 transform transition-transform hover:scale-105 cursor-pointer">
+                <img src="{{ asset('images/logo_inspektorat.png') }}" alt="Logo Inspektorat" class="w-full h-full object-contain drop-shadow-md">
             </div>
             <h1 class="text-headline-md font-extrabold text-on-surface tracking-tight text-center">APIP Manager</h1>
             <p class="text-body-sm text-on-surface-variant font-medium mt-1 text-center">Sistem Informasi Penugasan Inspektorat<br/>Kab. Puncak Jaya</p>

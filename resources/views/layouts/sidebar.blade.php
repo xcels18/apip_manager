@@ -2,8 +2,8 @@
     <div class="w-full flex flex-col h-full">
         <!-- Header -->
         <div class="h-20 flex items-center px-6 mb-2">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center mr-3 shadow-md shadow-primary/20 text-white transform transition-transform hover:rotate-12 cursor-pointer">
-                <span class="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+            <div class="w-10 h-10 mr-3 transform transition-transform hover:scale-110 cursor-pointer">
+                <img src="{{ asset('images/logo_inspektorat.png') }}" alt="Logo Inspektorat" class="w-full h-full object-contain drop-shadow-sm">
             </div>
             <div class="flex flex-col justify-center">
                 <span class="text-label-lg font-extrabold text-on-surface tracking-tight leading-none">APIP Manager</span>
