@@ -49,7 +49,7 @@
                 <div class="flex flex-col gap-2">
                     <label class="block text-[13px] font-bold text-on-surface">Nomor ST</label>
                     <div class="flex items-stretch h-10">
-                        <span class="flex items-center px-3 bg-surface-container-low border border-r-0 border-outline-variant rounded-l-lg text-[12px] text-on-surface-variant font-bold whitespace-nowrap">100.3.5.4/</span>
+                        <span class="flex items-center px-3 bg-surface-container-low border border-r-0 border-outline-variant rounded-l-lg text-[12px] text-on-surface-variant font-bold whitespace-nowrap">{{ $stPrefix }}</span>
                         <input
                             type="text"
                             name="nomor_st_number"
@@ -57,7 +57,7 @@
                             value="{{ old('nomor_st_number', $nomorStNumber) }}"
                             placeholder="001"
                         >
-                        <span class="flex items-center px-3 bg-surface-container-low border border-l-0 border-outline-variant rounded-r-lg text-[12px] text-on-surface-variant font-bold whitespace-nowrap">/ST/ITKAB/{{ $tahun }}</span>
+                        <span class="flex items-center px-3 bg-surface-container-low border border-l-0 border-outline-variant rounded-r-lg text-[12px] text-on-surface-variant font-bold whitespace-nowrap">{{ $stSuffix }}</span>
                     </div>
                     @error('nomor_st_number')
                         <div class="text-error text-[11px] font-medium flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">error</span>{{ $message }}</div>

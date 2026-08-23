@@ -172,6 +172,26 @@
                     </div>
                 </div>
 
+                <!-- Format Dokumen -->
+                <div class="bg-surface-card border border-border-subtle rounded-xl shadow-sm overflow-hidden flex flex-col mt-6">
+                    <div class="px-6 py-4 border-b border-border-subtle bg-surface-container-lowest flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary text-[20px]">numbers</span>
+                        <h3 class="font-bold text-label-lg text-primary">Format Dokumen</h3>
+                    </div>
+                    <div class="p-6 bg-white flex flex-col gap-4 flex-1">
+                        <div class="flex flex-col gap-2">
+                            <label class="text-[13px] font-bold text-on-surface">Format Nomor Surat Tugas (ST) <span class="text-error">*</span></label>
+                            <input type="text" name="format_nomor_st" class="w-full h-10 px-3 rounded-lg border {{ $errors->has('format_nomor_st') ? 'border-error focus:border-error focus:ring-error' : 'border-outline-variant focus:border-primary focus:ring-primary' }} focus:ring-1 text-body-sm bg-white outline-none transition-colors"
+                                    value="{{ old('format_nomor_st', $formatNomorSt ?? '100.3.5.4/[NOMOR]/ST/ITKAB/[TAHUN]') }}" required>
+                            <p class="text-[11px] text-on-surface-variant mt-1 leading-relaxed">
+                                Gunakan <strong>[NOMOR]</strong> sebagai tempat posisi nomor urut ST, dan <strong>[TAHUN]</strong> untuk tahun berjalan.<br/>
+                                <em>Contoh Input:</em> 100.3.5.4/[NOMOR]/ST/ITKAB/[TAHUN] <br/>
+                                <em>Hasil:</em> 100.3.5.4/<strong>001</strong>/ST/ITKAB/<strong>2026</strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Penandatangan Definitif & API Integrasi -->
                 <div class="flex flex-col gap-6">
                     <!-- Penandatangan Definitif -->

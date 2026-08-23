@@ -201,7 +201,13 @@ class PengawasanController extends Controller
         $pegawai = $response->successful() ? collect($response->json()['data'])->map(fn($p) => (object)$p) : collect();
         $tahun = date('Y');
 
-        return view('pengawasan.create', compact('pegawai', 'tahun'));
+        $formatNomorSt = \App\Models\SystemSetting::where('key', 'format_nomor_st')->first()->value ?? '100.3.5.4/[NOMOR]/ST/ITKAB/[TAHUN]';
+        $formatParts = explode('[NOMOR]', $formatNomorSt);
+        $stPrefix = $formatParts[0] ?? '100.3.5.4/';
+        $stSuffix = $formatParts[1] ?? '/ST/ITKAB/[TAHUN]';
+        $stSuffix = str_replace('[TAHUN]', $tahun, $stSuffix);
+
+        return view('pengawasan.create', compact('pegawai', 'tahun', 'stPrefix', 'stSuffix'));
     }
 
     /**
@@ -253,7 +259,12 @@ class PengawasanController extends Controller
         // Build full nomor ST (only if nomor_st_number is provided)
         $nomorST = null;
         if (!empty($validated['nomor_st_number'])) {
-            $nomorST = '100.3.5.4/' . $validated['nomor_st_number'] . '/ST/ITKAB/' . $tahun;
+            $formatNomorSt = \App\Models\SystemSetting::where('key', 'format_nomor_st')->first()->value ?? '100.3.5.4/[NOMOR]/ST/ITKAB/[TAHUN]';
+            $formatParts = explode('[NOMOR]', $formatNomorSt);
+            $stPrefix = $formatParts[0] ?? '100.3.5.4/';
+            $stSuffixRaw = $formatParts[1] ?? '/ST/ITKAB/[TAHUN]';
+            $stSuffix = str_replace('[TAHUN]', $tahun, $stSuffixRaw);
+            $nomorST = $stPrefix . $validated['nomor_st_number'] . $stSuffix;
         }
 
         // Check for duplicate personil (filter out null values)
@@ -432,14 +443,18 @@ class PengawasanController extends Controller
         $response = \Illuminate\Support\Facades\Http::withToken(config('services.pegawai.token'))
             ->get(config('services.pegawai.url'), ['per_page' => 1000]);
         $pegawai = $response->successful() ? collect($response->json()['data'])->map(fn($p) => (object)$p) : collect();
-        $tahun = date('Y');
+        $tahun = date('Y', strtotime($pengawasan->tanggal_st));
+        
+        $formatNomorSt = \App\Models\SystemSetting::where('key', 'format_nomor_st')->first()->value ?? '100.3.5.4/[NOMOR]/ST/ITKAB/[TAHUN]';
+        $formatParts = explode('[NOMOR]', $formatNomorSt);
+        $stPrefix = $formatParts[0] ?? '100.3.5.4/';
+        $stSuffixRaw = $formatParts[1] ?? '/ST/ITKAB/[TAHUN]';
+        $stSuffix = str_replace('[TAHUN]', $tahun, $stSuffixRaw);
 
-        // Extract nomor from full nomor_st
-        // Format: 100.3.5.4/XXX/ST/ITKAB/2025
-        $nomorParts = explode('/', $pengawasan->nomor_st);
-        $nomorStNumber = $nomorParts[1] ?? '';
+        // Extract raw number by removing prefix and suffix
+        $nomorStNumber = str_replace([$stPrefix, $stSuffix], '', $pengawasan->nomor_st);
 
-        return view('pengawasan.edit', compact('pengawasan', 'pegawai', 'tahun', 'nomorStNumber'));
+        return view('pengawasan.edit', compact('pengawasan', 'pegawai', 'tahun', 'nomorStNumber', 'stPrefix', 'stSuffix'));
     }
 
     /**
@@ -493,7 +508,12 @@ class PengawasanController extends Controller
         // Build full nomor ST (only if nomor_st_number is provided)
         $nomorST = null;
         if (!empty($validated['nomor_st_number'])) {
-            $nomorST = '100.3.5.4/' . $validated['nomor_st_number'] . '/ST/ITKAB/' . $tahun;
+            $formatNomorSt = \App\Models\SystemSetting::where('key', 'format_nomor_st')->first()->value ?? '100.3.5.4/[NOMOR]/ST/ITKAB/[TAHUN]';
+            $formatParts = explode('[NOMOR]', $formatNomorSt);
+            $stPrefix = $formatParts[0] ?? '100.3.5.4/';
+            $stSuffixRaw = $formatParts[1] ?? '/ST/ITKAB/[TAHUN]';
+            $stSuffix = str_replace('[TAHUN]', $tahun, $stSuffixRaw);
+            $nomorST = $stPrefix . $validated['nomor_st_number'] . $stSuffix;
         }
 
         // Check for duplicate personil (filter out null values)

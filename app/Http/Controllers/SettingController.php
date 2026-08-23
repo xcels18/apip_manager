@@ -23,8 +23,9 @@ class SettingController extends Controller
         $kopInstansi = \App\Models\SystemSetting::where('key', 'kop_instansi')->first()->value ?? 'INSPEKTORAT';
         $kopJalan = \App\Models\SystemSetting::where('key', 'kop_jalan')->first()->value ?? 'Jalan Yos Sudarso Kotaraja Telp. (0969) 31014 Fax. (0969) 31015';
         $kopEmail = \App\Models\SystemSetting::where('key', 'kop_email')->first()->value ?? 'Email: inspektorat@puncakjayakab.go.id';
+        $formatNomorSt = \App\Models\SystemSetting::where('key', 'format_nomor_st')->first()->value ?? '100.3.5.4/[NOMOR]/ST/ITKAB/[TAHUN]';
 
-        return view('setting.index', compact('apiUrl', 'apiToken', 'definitifNama', 'definitifNip', 'definitifJabatan', 'definitifPangkat', 'kopPemerintah', 'kopInstansi', 'kopJalan', 'kopEmail'));
+        return view('setting.index', compact('apiUrl', 'apiToken', 'definitifNama', 'definitifNip', 'definitifJabatan', 'definitifPangkat', 'kopPemerintah', 'kopInstansi', 'kopJalan', 'kopEmail', 'formatNomorSt'));
     }
 
     public function updateProfile(Request $request)
@@ -95,6 +96,7 @@ class SettingController extends Controller
             'kop_instansi' => 'required|string',
             'kop_jalan' => 'required|string',
             'kop_email' => 'required|string',
+            'format_nomor_st' => 'required|string',
         ], [
             'pegawai_api_url.required' => 'URL API Pegawai harus diisi',
             'pegawai_api_url.url' => 'Format URL tidak valid',
@@ -105,6 +107,7 @@ class SettingController extends Controller
             'kop_instansi.required' => 'Subheader Instansi harus diisi',
             'kop_jalan.required' => 'Alamat harus diisi',
             'kop_email.required' => 'Email harus diisi',
+            'format_nomor_st.required' => 'Format Nomor Surat Tugas harus diisi',
         ]);
 
         \App\Models\SystemSetting::updateOrCreate(
@@ -155,6 +158,11 @@ class SettingController extends Controller
         \App\Models\SystemSetting::updateOrCreate(
             ['key' => 'kop_email'],
             ['value' => $request->kop_email]
+        );
+
+        \App\Models\SystemSetting::updateOrCreate(
+            ['key' => 'format_nomor_st'],
+            ['value' => $request->format_nomor_st]
         );
 
         return redirect()->route('setting.index')
