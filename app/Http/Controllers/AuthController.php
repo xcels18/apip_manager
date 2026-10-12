@@ -27,6 +27,7 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials, $request->filled('remember'))) {
             $request->session()->regenerate();
+
             return redirect()->intended('dashboard');
         }
 
@@ -50,9 +51,8 @@ class AuthController extends Controller
     public function dashboard()
     {
         $totalPegawai = 0;
-        $response = \Illuminate\Support\Facades\Http::withToken(config('services.pegawai.token'))
-            ->get(config('services.pegawai.url'), ['per_page' => 1]);
-            
+        $response = app(\App\Services\PegawaiService::class)->get(['per_page' => 1]);
+
         if ($response->successful()) {
             $data = $response->json();
             if (isset($data['meta']['total'])) {
@@ -61,7 +61,12 @@ class AuthController extends Controller
                 $totalPegawai = count($data['data'] ?? []);
             }
         }
-        
+
+        if (! $response->successful()) {
+            session()->flash('error', 'Layanan pegawai sementara tidak tersedia. Jumlah pegawai belum dapat diperbarui.');
+            $totalPegawai = null;
+        }
+
         return view('dashboard', compact('totalPegawai'));
     }
 }

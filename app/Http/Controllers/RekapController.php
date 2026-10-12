@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Pengawasan;
+use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class RekapController extends Controller
 {
@@ -19,6 +19,10 @@ class RekapController extends Controller
 
     public function export(Request $request)
     {
+        $request->validate([
+            'status' => 'nullable|in:belum_selesai,selesai', 'jenis' => 'nullable|string|max:100',
+            'bulan' => 'nullable|integer|between:1,12', 'tahun' => 'nullable|integer|between:1900,9999',
+        ]);
         // Get filter parameters
         $status = $request->input('status');
         $jenis = $request->input('jenis');
@@ -27,7 +31,7 @@ class RekapController extends Controller
 
         // Build query
         $query = Pengawasan::with([
-            'dasarHukum'
+            'dasarHukum',
         ]);
 
         // Apply filters
@@ -39,20 +43,25 @@ class RekapController extends Controller
             $query->where('jenis_penugasan', $jenis);
         }
 
-        if ($bulan && $tahun) {
-            $query->whereMonth('tanggal_st', $bulan)
-                  ->whereYear('tanggal_st', $tahun);
-        } elseif ($tahun) {
+        if ($bulan) {
+            $query->whereMonth('tanggal_st', $bulan);
+        }
+        if ($tahun) {
             $query->whereYear('tanggal_st', $tahun);
         }
 
-        $pengawasanList = $query->orderBy('tanggal_st', 'desc')->get();
-        
-        // Inject Pegawai Data from API
-        app(PengawasanController::class)->injectPegawaiData($pengawasanList);
+        if ((clone $query)->count() > config('pengawasan.export_max_assignments')) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['export' => 'Hasil terlalu besar. Persempit filter bulan, tahun, atau jenis pengawasan.']);
+        }
+        $pengawasanList = (function () use ($query) {
+            foreach ($query->orderByDesc('tanggal_st')->orderByDesc('id')->lazy(100)->chunk(100) as $chunk) {
+                app(\App\Services\PersonilService::class)->inject($chunk, true);
+                yield from $chunk;
+            }
+        })();
 
         // Create spreadsheet
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
 
         // Set document properties
@@ -67,11 +76,11 @@ class RekapController extends Controller
             'font' => [
                 'bold' => true,
                 'color' => ['rgb' => 'FFFFFF'],
-                'size' => 11
+                'size' => 11,
             ],
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
-                'startColor' => ['rgb' => '7c3aed']
+                'startColor' => ['rgb' => '7c3aed'],
             ],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -80,9 +89,9 @@ class RekapController extends Controller
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
-                    'color' => ['rgb' => '000000']
-                ]
-            ]
+                    'color' => ['rgb' => '000000'],
+                ],
+            ],
         ];
 
         // Set headers
@@ -99,13 +108,13 @@ class RekapController extends Controller
             'NIP',
             'Jabatan',
             'Peran',
-            'Dasar Hukum'
+            'Dasar Hukum',
         ];
 
         $col = 'A';
         foreach ($headers as $header) {
-            $sheet->setCellValue($col . '1', $header);
-            $sheet->getStyle($col . '1')->applyFromArray($headerStyle);
+            $sheet->setCellValue($col.'1', $header);
+            $sheet->getStyle($col.'1')->applyFromArray($headerStyle);
             $col++;
         }
 
@@ -128,13 +137,13 @@ class RekapController extends Controller
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
-                    'color' => ['rgb' => '000000']
-                ]
+                    'color' => ['rgb' => '000000'],
+                ],
             ],
             'alignment' => [
                 'vertical' => Alignment::VERTICAL_TOP,
-                'wrapText' => true
-            ]
+                'wrapText' => true,
+            ],
         ];
 
         // Fill data - 1 orang per baris
@@ -147,25 +156,25 @@ class RekapController extends Controller
             if ($pengawasan->penanggungJawab) {
                 $personilList[] = [
                     'pegawai' => $pengawasan->penanggungJawab,
-                    'peran'   => 'Penanggung Jawab',
+                    'peran' => 'Penanggung Jawab',
                 ];
             }
             if ($pengawasan->pengendaliTeknis) {
                 $personilList[] = [
                     'pegawai' => $pengawasan->pengendaliTeknis,
-                    'peran'   => 'Pengendali Teknis',
+                    'peran' => 'Pengendali Teknis',
                 ];
             }
             if ($pengawasan->ketuaTim) {
                 $personilList[] = [
                     'pegawai' => $pengawasan->ketuaTim,
-                    'peran'   => 'Ketua Tim',
+                    'peran' => 'Ketua Tim',
                 ];
             }
             foreach ($pengawasan->anggota as $anggota) {
                 $personilList[] = [
                     'pegawai' => $anggota,
-                    'peran'   => 'Anggota Tim',
+                    'peran' => 'Anggota Tim',
                 ];
             }
 
@@ -177,20 +186,24 @@ class RekapController extends Controller
             $startRow = $row;
 
             // Dasar hukum (sama untuk semua baris dalam 1 ST)
-            $dasarHukumList = $pengawasan->dasarHukum->map(function($dasar, $index) {
-                return ($index + 1) . '. ' . $dasar->isi_dasar;
+            $dasarHukumList = $pengawasan->dasarHukum->map(function ($dasar, $index) {
+                return ($index + 1).'. '.$dasar->isi_dasar;
             })->implode("\n");
 
+            if ($row - 2 + count($personilList) > config('pengawasan.export_max_rows')) {
+                $spreadsheet->disconnectWorksheets();
+                throw \Illuminate\Validation\ValidationException::withMessages(['export' => 'Jumlah baris ekspor terlalu besar. Persempit filter pengawasan.']);
+            }
             foreach ($personilList as $item) {
                 $pegawai = $item['pegawai'];
 
-                $sheet->setCellValue('I' . $row, $pegawai ? $pegawai->nama : '-');
-                $sheet->setCellValue('J' . $row, $pegawai ? $pegawai->nip : '-');
-                $sheet->setCellValue('K' . $row, $pegawai ? $pegawai->jabatan : '-');
-                $sheet->setCellValue('L' . $row, $item['peran']);
+                $sheet->setCellValueExplicit('I'.$row, (string) ($pegawai ? $pegawai->nama : '-'), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                $sheet->setCellValueExplicit('J'.$row, (string) ($pegawai ? $pegawai->nip : '-'), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                $sheet->setCellValueExplicit('K'.$row, (string) ($pegawai ? $pegawai->jabatan : '-'), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                $sheet->setCellValueExplicit('L'.$row, (string) ($item['peran']), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
 
-                $sheet->getStyle('I' . $row . ':L' . $row)->applyFromArray($dataStyle);
-                $sheet->getStyle('L' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->getStyle('I'.$row.':L'.$row)->applyFromArray($dataStyle);
+                $sheet->getStyle('L'.$row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                 $row++;
             }
@@ -198,29 +211,29 @@ class RekapController extends Controller
             $endRow = $row - 1;
 
             // Isi kolom info ST (A-H) dan merge jika lebih dari 1 personil
-            $sheet->setCellValue('A' . $startRow, $no);
-            $sheet->setCellValue('B' . $startRow, $pengawasan->nomor_st);
-            $sheet->setCellValue('C' . $startRow, $pengawasan->tanggal_st->format('d/m/Y'));
-            $sheet->setCellValue('D' . $startRow, $pengawasan->lama_penugasan . ' Hari');
-            $sheet->setCellValue('E' . $startRow, $pengawasan->jenis_penugasan);
-            $sheet->setCellValue('F' . $startRow, $pengawasan->uraian_penugasan);
-            $sheet->setCellValue('G' . $startRow, $pengawasan->lokasi_penugasan);
-            $sheet->setCellValue('H' . $startRow, $pengawasan->status_label);
-            $sheet->setCellValue('M' . $startRow, $dasarHukumList);
+            $sheet->setCellValue('A'.$startRow, $no);
+            $sheet->setCellValueExplicit('B'.$startRow, (string) ($pengawasan->nomor_st), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue('C'.$startRow, $pengawasan->tanggal_st->format('d/m/Y'));
+            $sheet->setCellValue('D'.$startRow, $pengawasan->lama_penugasan.' Hari');
+            $sheet->setCellValue('E'.$startRow, $pengawasan->jenis_penugasan);
+            $sheet->setCellValueExplicit('F'.$startRow, (string) ($pengawasan->uraian_penugasan), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit('G'.$startRow, (string) ($pengawasan->lokasi_penugasan), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            $sheet->setCellValue('H'.$startRow, $pengawasan->status_label);
+            $sheet->setCellValueExplicit('M'.$startRow, (string) ($dasarHukumList), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
 
             if ($jumlahPersonil > 1) {
                 foreach (['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'M'] as $c) {
-                    $sheet->mergeCells($c . $startRow . ':' . $c . $endRow);
+                    $sheet->mergeCells($c.$startRow.':'.$c.$endRow);
                 }
             }
 
-            $sheet->getStyle('A' . $startRow . ':H' . $endRow)->applyFromArray($dataStyle);
-            $sheet->getStyle('M' . $startRow . ':M' . $endRow)->applyFromArray($dataStyle);
+            $sheet->getStyle('A'.$startRow.':H'.$endRow)->applyFromArray($dataStyle);
+            $sheet->getStyle('M'.$startRow.':M'.$endRow)->applyFromArray($dataStyle);
 
-            $sheet->getStyle('A' . $startRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle('C' . $startRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle('D' . $startRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle('H' . $startRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('A'.$startRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('C'.$startRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('D'.$startRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('H'.$startRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
             $no++;
         }
@@ -231,16 +244,14 @@ class RekapController extends Controller
         }
 
         // Generate filename
-        $filename = 'Rekap_Pengawasan_' . date('Y-m-d_His') . '.xlsx';
+        $filename = 'Rekap_Pengawasan_'.date('Y-m-d_His').'.xlsx';
 
-        // Create writer and download
-        $writer = new Xlsx($spreadsheet);
-
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment;filename="' . $filename . '"');
-        header('Cache-Control: max-age=0');
-
-        $writer->save('php://output');
-        exit;
+        return response()->streamDownload(function () use ($spreadsheet) {
+            try {
+                (new Xlsx($spreadsheet))->save('php://output');
+            } finally {
+                $spreadsheet->disconnectWorksheets();
+            }
+        }, $filename, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
     }
 }

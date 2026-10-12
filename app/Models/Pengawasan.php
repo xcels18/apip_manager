@@ -9,6 +9,14 @@ class Pengawasan extends Model
     protected $table = 'pengawasan';
 
     protected $fillable = [
+        'personil_snapshot',
+        'penandatangan_definitif_nama',
+        'penandatangan_definitif_nip',
+        'penandatangan_definitif_jabatan',
+        'kop_pemerintah',
+        'kop_instansi',
+        'kop_jalan',
+        'kop_email',
         'nomor_st',
         'tanggal_st',
         'lama_penugasan',
@@ -49,7 +57,7 @@ class Pengawasan extends Model
         $anggotaIds = \Illuminate\Support\Facades\DB::table('pengawasan_anggota')
             ->where('pengawasan_id', $this->id)
             ->pluck('pegawai_id');
-            
+
         $personil = $personil->merge($anggotaIds);
 
         return $personil->unique()->filter();

@@ -11,25 +11,25 @@ class PegawaiController extends Controller
      */
     public function index(Request $request)
     {
+        $request->validate(['search' => 'nullable|string|max:200', 'page' => 'sometimes|integer|min:1']);
         $search = $request->input('search');
         $page = $request->input('page', 1);
         $perPage = 10;
 
-        $response = \Illuminate\Support\Facades\Http::withToken(config('services.pegawai.token'))
-            ->get(config('services.pegawai.url'), [
-                'search' => $search,
-                'page' => $page,
-                'per_page' => $perPage,
-            ]);
+        $response = app(\App\Services\PegawaiService::class)->get([
+            'search' => $search,
+            'page' => $page,
+            'per_page' => $perPage,
+        ]);
 
         if ($response->successful()) {
             $apiData = $response->json();
-            
+
             if (isset($apiData['meta'])) {
-                $items = collect($apiData['data'])->map(function($item) {
+                $items = collect($apiData['data'])->map(function ($item) {
                     return (object) $item;
                 });
-                
+
                 $pegawai = new \Illuminate\Pagination\LengthAwarePaginator(
                     $items,
                     $apiData['meta']['total'],
@@ -38,25 +38,25 @@ class PegawaiController extends Controller
                     ['path' => route('pegawai.index'), 'query' => request()->query()]
                 );
             } else {
-                $items = collect($apiData['data'] ?? $apiData)->map(function($item) {
+                $items = collect($apiData['data'] ?? $apiData)->map(function ($item) {
                     return (object) $item;
                 });
-                
+
                 $perPage = 10;
                 $currentPage = (int) $page;
                 $currentItems = $items->slice(($currentPage - 1) * $perPage, $perPage)->values();
 
                 $pegawai = new \Illuminate\Pagination\LengthAwarePaginator(
-                    $currentItems, 
-                    $items->count(), 
-                    $perPage, 
-                    $currentPage, 
+                    $currentItems,
+                    $items->count(),
+                    $perPage,
+                    $currentPage,
                     ['path' => route('pegawai.index'), 'query' => request()->query()]
                 );
             }
         } else {
             $pegawai = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10, 1, ['path' => route('pegawai.index')]);
-            session()->flash('error', 'Gagal mengambil data dari API Eksternal (Status: ' . $response->status() . ')');
+            session()->flash('error', 'Gagal mengambil data dari API Eksternal (Status: '.$response->status().')');
         }
 
         return view('pegawai.index', compact('pegawai', 'search'));
@@ -67,17 +67,17 @@ class PegawaiController extends Controller
      */
     public function searchApi(Request $request)
     {
+        $request->validate(['search' => 'nullable|string|max:200', 'page' => 'sometimes|integer|min:1']);
         $search = $request->input('search');
-        
-        $response = \Illuminate\Support\Facades\Http::withToken(config('services.pegawai.token'))
-            ->get(config('services.pegawai.url'), [
-                'search' => $search,
-                'per_page' => 15,
-            ]);
+
+        $response = app(\App\Services\PegawaiService::class)->get([
+            'search' => $search,
+            'per_page' => 15,
+        ]);
 
         if ($response->successful()) {
             $apiData = $response->json();
-            
+
             // Standardize output format
             $items = [];
             if (isset($apiData['data'])) {
@@ -86,10 +86,10 @@ class PegawaiController extends Controller
                 // If it's just an array of objects
                 $items = is_array($apiData) ? $apiData : [];
             }
-            
+
             return response()->json(['data' => $items]);
         }
 
-        return response()->json(['data' => []], 200);
+        return response()->json(['data' => [], 'message' => 'Layanan pegawai sementara tidak tersedia.'], 503);
     }
 }

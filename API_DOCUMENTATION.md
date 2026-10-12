@@ -1,3 +1,5 @@
+> Pembaruan 9 September 2026: API pegawai lokal hanya-baca. API pengawasan memakai snapshot dari direktori eksternal dan transaksi atomik. Login dibatasi 5 percobaan/menit per email+IP serta 30/menit per IP (429 jika terlampaui). Pagination API pengawasan dibatasi 1–100 data/halaman.
+
 # API Documentation - Sistem Pengawasan Inspektorat
 
 ## Base URL
@@ -292,17 +294,17 @@ Membuat data pengawasan baru.
 ```
 
 **Field Descriptions:**
-- `nomor_st` (required): Nomor Surat Tugas
+- `nomor_st` (required): Nomor Surat Tugas unik, maksimal 100 karakter
 - `tanggal_st` (required): Tanggal Surat Tugas (format: YYYY-MM-DD)
-- `lama_penugasan` (required): Lama penugasan dalam hari (integer, min: 1)
+- `lama_penugasan` (required): Lama penugasan dalam hari (integer, 1–366)
 - `jenis_penugasan` (required): Jenis penugasan (`Audit`, `Reviu`, `Monitoring`, `Evaluasi`, `Perjalanan Dinas Luar Daerah`)
 - `uraian_penugasan` (required): Uraian/deskripsi penugasan
 - `lokasi_penugasan` (required): Lokasi penugasan
-- `alat_angkut` (required): Alat angkut (`darat`, `laut`, `udara`)
+- `alat_angkut` (required): Alat angkut (`darat`, `udara`)
 - `status` (required): Status (`belum_selesai`, `selesai`)
-- `penanggung_jawab_id` (nullable): ID Pegawai sebagai Penanggung Jawab
+- `penanggung_jawab_id`: ID pegawai eksternal; wajib kecuali Perjalanan Dinas Luar Daerah
 - `pengendali_teknis_id` (nullable): ID Pegawai sebagai Pengendali Teknis
-- `ketua_tim_id` (nullable): ID Pegawai sebagai Ketua Tim
+- `ketua_tim_id`: ID pegawai eksternal; wajib kecuali Perjalanan Dinas Luar Daerah
 - `anggota` (nullable): Array ID Pegawai sebagai Anggota Tim
 - `dasar_hukum` (required): Array string berisi dasar hukum (minimal 1)
 
@@ -318,8 +320,7 @@ Membuat data pengawasan baru.
 **Response Error (422):**
 ```json
 {
-  "success": false,
-  "message": "Validation error",
+  "message": "The given data was invalid.",
   "errors": {
     "nomor_st": ["The nomor st field is required."],
     "tanggal_st": ["The tanggal st field is required."]
@@ -345,7 +346,7 @@ Mengupdate data pengawasan yang sudah ada.
 }
 ```
 
-**Note:** Semua field bersifat optional. Hanya field yang dikirim yang akan diupdate.
+**Note:** Semua field bersifat optional. Hanya field yang dikirim yang akan diupdate. Status `selesai` memerlukan laporan yang sudah diunggah melalui aplikasi. ID personil harus berasal dari direktori eksternal; duplikasi personil dan bentrok tanggal ketua/anggota ditolak dengan 422. Snapshot personil yang tidak berubah dipertahankan walaupun layanan pegawai offline.
 
 **Response Success (200):**
 ```json
@@ -402,7 +403,6 @@ Mendapatkan daftar semua pegawai dengan pagination.
 
 **Query Parameters:**
 - `search` (optional): Cari berdasarkan nama atau NIP
-- `jabatan` (optional): Filter berdasarkan jabatan
 - `per_page` (optional): Jumlah data per halaman (default: 15)
 - `page` (optional): Nomor halaman (default: 1)
 
@@ -425,7 +425,6 @@ GET /api/pegawai?search=john&per_page=10
       "updated_at": "2025-01-01 10:00:00"
     }
   ],
-  "links": { ... },
   "meta": { ... }
 }
 ```
@@ -458,108 +457,17 @@ Mendapatkan detail pegawai berdasarkan ID.
 **Response Error (404):**
 ```json
 {
-  "success": false,
-  "message": "Pegawai not found"
+  "message": "Not Found"
 }
 ```
 
 ---
 
-### 3.3 Create Pegawai
-Membuat data pegawai baru.
+### 3.3 Pengelolaan pegawai
 
-**Endpoint:** `POST /api/pegawai`
+APIP Manager menggunakan direktori pegawai eksternal sebagai sumber data. Endpoint lokal hanya menyediakan `GET /api/pegawai` dan `GET /api/pegawai/{id}`. Tambah, ubah, dan hapus pegawai dilakukan di aplikasi sumber; metode POST/PUT/PATCH/DELETE lokal mengembalikan 405 dan tidak diteruskan ke layanan eksternal.
 
-**Headers:** `Authorization: Bearer {token}`
-
-**Request Body:**
-```json
-{
-  "nip": "199005052020125005",
-  "nama": "Charlie Wilson",
-  "jabatan": "Auditor",
-  "golongan": "III/b"
-}
-```
-
-**Field Descriptions:**
-- `nip` (required): NIP pegawai (max: 18 karakter, unique)
-- `nama` (required): Nama lengkap pegawai
-- `jabatan` (required): Jabatan pegawai
-- `golongan` (required): Golongan pegawai (max: 10 karakter)
-
-**Response Success (201):**
-```json
-{
-  "success": true,
-  "message": "Pegawai created successfully",
-  "data": { ... }
-}
-```
-
-**Response Error (422):**
-```json
-{
-  "success": false,
-  "message": "Validation error",
-  "errors": {
-    "nip": ["The nip has already been taken."]
-  }
-}
-```
-
----
-
-### 3.4 Update Pegawai
-Mengupdate data pegawai yang sudah ada.
-
-**Endpoint:** `PUT /api/pegawai/{id}` atau `PATCH /api/pegawai/{id}`
-
-**Headers:** `Authorization: Bearer {token}`
-
-**Request Body:**
-```json
-{
-  "jabatan": "Inspektur Pembantu",
-  "golongan": "IV/b"
-}
-```
-
-**Note:** Semua field bersifat optional. Hanya field yang dikirim yang akan diupdate.
-
-**Response Success (200):**
-```json
-{
-  "success": true,
-  "message": "Pegawai updated successfully",
-  "data": { ... }
-}
-```
-
----
-
-### 3.5 Delete Pegawai
-Menghapus data pegawai.
-
-**Endpoint:** `DELETE /api/pegawai/{id}`
-
-**Headers:** `Authorization: Bearer {token}`
-
-**Response Success (200):**
-```json
-{
-  "success": true,
-  "message": "Pegawai deleted successfully"
-}
-```
-
-**Response Error (404):**
-```json
-{
-  "success": false,
-  "message": "Pegawai not found"
-}
-```
+Set `PEGAWAI_API_URL` dan token layanan, atau gunakan Pengaturan Sistem. URL harus menunjuk ke direktori eksternal, bukan `/api/pegawai` milik APIP Manager sendiri. Gangguan koneksi atau respons upstream tidak valid menghasilkan 503. Pagination list menerima `page` positif dan `per_page` 1–100. Metadata minimal: `total`, `per_page`, `current_page`; `last_page` tersedia jika dikirim upstream. Field tambahan pegawai mengikuti layanan sumber.
 
 ---
 
@@ -577,8 +485,7 @@ Token tidak valid atau tidak ada.
 Data yang dikirim tidak valid.
 ```json
 {
-  "success": false,
-  "message": "Validation error",
+  "message": "The given data was invalid.",
   "errors": {
     "field_name": ["Error message"]
   }

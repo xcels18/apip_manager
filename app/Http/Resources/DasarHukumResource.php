@@ -17,6 +17,7 @@ class DasarHukumResource extends JsonResource
         return [
             'id' => $this->id,
             'isi_dasar' => $this->isi_dasar,
+            'urutan' => (int) $this->urutan,
         ];
     }
 }

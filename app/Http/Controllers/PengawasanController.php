@@ -2,134 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Pengawasan;
-use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PengawasanController extends Controller
 {
     public function injectPegawaiData($pengawasanList)
     {
-        $pegawaiIds = [];
-        foreach ($pengawasanList as $p) {
-            if ($p->personil_snapshot) {
-                $snapshot = json_decode($p->personil_snapshot);
-                $p->penanggungJawab = $snapshot->penanggungJawab ?? null;
-                $p->pengendaliTeknis = $snapshot->pengendaliTeknis ?? null;
-                $p->ketuaTim = $snapshot->ketuaTim ?? null;
-                $p->anggota = collect($snapshot->anggota ?? []);
-                continue;
-            }
-
-            if ($p->penanggung_jawab_id) $pegawaiIds[] = $p->penanggung_jawab_id;
-            if ($p->pengendali_teknis_id) $pegawaiIds[] = $p->pengendali_teknis_id;
-            if ($p->ketua_tim_id) $pegawaiIds[] = $p->ketua_tim_id;
-            $anggotaIds = \Illuminate\Support\Facades\DB::table('pengawasan_anggota')->where('pengawasan_id', $p->id)->pluck('pegawai_id')->toArray();
-            $p->anggota_ids = $anggotaIds;
-            $pegawaiIds = array_merge($pegawaiIds, $anggotaIds);
-        }
-        
-        $pegawaiIds = array_unique($pegawaiIds);
-        
-        if (!empty($pegawaiIds)) {
-            $response = \Illuminate\Support\Facades\Http::withToken(config('services.pegawai.token'))
-                ->get(config('services.pegawai.url'), ['per_page' => 1000]);
-                
-            $pegawaiMap = [];
-            if ($response->successful()) {
-                $data = $response->json()['data'] ?? [];
-                foreach ($data as $item) {
-                    $pegawaiMap[$item['id']] = (object) $item;
-                }
-            }
-            
-            foreach ($pengawasanList as $p) {
-                if ($p->personil_snapshot) continue;
-
-                $p->penanggungJawab = $p->penanggung_jawab_id && isset($pegawaiMap[$p->penanggung_jawab_id]) ? $pegawaiMap[$p->penanggung_jawab_id] : null;
-                $p->pengendaliTeknis = $p->pengendali_teknis_id && isset($pegawaiMap[$p->pengendali_teknis_id]) ? $pegawaiMap[$p->pengendali_teknis_id] : null;
-                $p->ketuaTim = $p->ketua_tim_id && isset($pegawaiMap[$p->ketua_tim_id]) ? $pegawaiMap[$p->ketua_tim_id] : null;
-                
-                $anggota = [];
-                foreach ($p->anggota_ids as $aId) {
-                    if (isset($pegawaiMap[$aId])) {
-                        $anggota[] = $pegawaiMap[$aId];
-                    }
-                }
-                $p->anggota = collect($anggota);
-            }
-        }
+        app(\App\Services\PersonilService::class)->inject($pengawasanList);
     }
 
     private function createPersonilSnapshot($pengawasan)
     {
-        $existingSnapshot = $pengawasan->personil_snapshot ? json_decode($pengawasan->personil_snapshot) : null;
-        
-        // Temporarily clear the snapshot to force fetching from API
-        $pengawasan->personil_snapshot = null;
-        $this->injectPegawaiData([$pengawasan]);
-
-        // Merge existing snapshot data to prevent overwriting historical data on edit
-        if ($existingSnapshot) {
-            if ($existingSnapshot->penanggungJawab && $pengawasan->penanggung_jawab_id == $existingSnapshot->penanggungJawab->id) {
-                $pengawasan->penanggungJawab = $existingSnapshot->penanggungJawab;
-            }
-            if ($existingSnapshot->pengendaliTeknis && $pengawasan->pengendali_teknis_id == $existingSnapshot->pengendaliTeknis->id) {
-                $pengawasan->pengendaliTeknis = $existingSnapshot->pengendaliTeknis;
-            }
-            if ($existingSnapshot->ketuaTim && $pengawasan->ketua_tim_id == $existingSnapshot->ketuaTim->id) {
-                $pengawasan->ketuaTim = $existingSnapshot->ketuaTim;
-            }
-            
-            $snapshotAnggotaMap = [];
-            foreach ($existingSnapshot->anggota ?? [] as $a) {
-                $snapshotAnggotaMap[$a->id] = $a;
-            }
-            
-            $mergedAnggota = [];
-            foreach ($pengawasan->anggota as $newA) {
-                if (isset($snapshotAnggotaMap[$newA->id])) {
-                    $mergedAnggota[] = $snapshotAnggotaMap[$newA->id];
-                } else {
-                    $mergedAnggota[] = $newA;
-                }
-            }
-            $pengawasan->anggota = collect($mergedAnggota);
-        }
-
-        $plhData = null;
-        if ($pengawasan->penandatangan_type === 'plh') {
-            $plhData = $this->resolvePegawaiPlh($pengawasan);
-            
-            // Keep old PLH snapshot if name and jabatan haven't changed
-            if ($existingSnapshot && isset($existingSnapshot->plh) && $existingSnapshot->plh && 
-                $existingSnapshot->plh->nama == $pengawasan->penandatangan_plh_nama && 
-                $existingSnapshot->plh->jabatan == $pengawasan->penandatangan_plh_jabatan) {
-                $plhData = $existingSnapshot->plh;
-            }
-        } else {
-            $plhData = null;
-        }
-
-        $snapshot = [
-            'penanggungJawab' => $pengawasan->penanggungJawab,
-            'pengendaliTeknis' => $pengawasan->pengendaliTeknis,
-            'ketuaTim' => $pengawasan->ketuaTim,
-            'anggota' => $pengawasan->anggota,
-            'plh' => $plhData,
-        ];
-
-        // Update database directly so we don't save dynamically attached properties like penanggungJawab
-        \Illuminate\Support\Facades\DB::table('pengawasan')
-            ->where('id', $pengawasan->id)
-            ->update([
-                'personil_snapshot' => json_encode($snapshot),
-                'updated_at' => now(),
-            ]);
-            
-        $pengawasan->personil_snapshot = json_encode($snapshot);
+        app(\App\Services\PersonilService::class)->snapshot($pengawasan);
     }
 
     private function resolvePegawaiPlh($pengawasan)
@@ -142,15 +30,15 @@ class PengawasanController extends Controller
         }
 
         if (($pengawasan->penandatangan_type ?? 'definitif') === 'plh' && $pengawasan->penandatangan_plh_nama) {
-             $response = \Illuminate\Support\Facades\Http::withToken(config('services.pegawai.token'))
-                ->get(config('services.pegawai.url'), [
-                    'search' => $pengawasan->penandatangan_plh_nama,
-                    'per_page' => 1
-                ]);
-             if ($response->successful() && !empty($response->json()['data'])) {
-                 return (object) $response->json()['data'][0];
-             }
+            $response = app(\App\Services\PegawaiService::class)->get([
+                'search' => $pengawasan->penandatangan_plh_nama,
+                'per_page' => 1,
+            ]);
+            if ($response->successful() && ! empty($response->json()['data'])) {
+                return (object) $response->json()['data'][0];
+            }
         }
+
         return null;
     }
 
@@ -171,15 +59,15 @@ class PengawasanController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('nomor_st', 'like', "%{$search}%")
-                  ->orWhere('uraian_penugasan', 'like', "%{$search}%")
-                  ->orWhere('lokasi_penugasan', 'like', "%{$search}%");
+                    ->orWhere('uraian_penugasan', 'like', "%{$search}%")
+                    ->orWhere('lokasi_penugasan', 'like', "%{$search}%");
             });
         }
 
         $pengawasan = $query->orderBy('tanggal_st', 'desc')->paginate(12)->withQueryString();
-        
+
         $this->injectPegawaiData($pengawasan->items());
 
         $totalSemua = Pengawasan::count();
@@ -196,12 +84,14 @@ class PengawasanController extends Controller
      */
     public function create()
     {
-        $response = \Illuminate\Support\Facades\Http::withToken(config('services.pegawai.token'))
-            ->get(config('services.pegawai.url'), ['per_page' => 1000]);
-        $pegawai = $response->successful() ? collect($response->json()['data'])->map(fn($p) => (object)$p) : collect();
+        $response = app(\App\Services\PegawaiService::class)->allResponse();
+        $pegawai = $response->successful() ? collect($response->json()['data'])->map(fn ($p) => (object) $p) : collect();
+        if (! $response->successful()) {
+            session()->flash('error', 'Layanan pegawai sementara tidak tersedia. Coba kembali sebelum menyimpan penugasan.');
+        }
         $tahun = date('Y');
 
-        $formatNomorSt = \App\Models\SystemSetting::where('key', 'format_nomor_st')->first()->value ?? '100.3.5.4/[NOMOR]/ST/ITKAB/[TAHUN]';
+        $formatNomorSt = \App\Models\SystemSetting::valueFor('format_nomor_st') ?? '100.3.5.4/[NOMOR]/ST/ITKAB/[TAHUN]';
         $formatParts = explode('[NOMOR]', $formatNomorSt);
         $stPrefix = $formatParts[0] ?? '100.3.5.4/';
         $stSuffix = $formatParts[1] ?? '/ST/ITKAB/[TAHUN]';
@@ -223,18 +113,18 @@ class PengawasanController extends Controller
         $validated = $request->validate([
             'nomor_st_number' => 'nullable|string|max:50',
             'tanggal_st' => 'required|date',
-            'lama_penugasan' => 'required|integer|min:1',
+            'lama_penugasan' => 'required|integer|min:1|max:366',
             'uraian_penugasan' => 'required|string',
             'lokasi_penugasan' => 'required|string|max:200',
             'alat_angkut' => 'required|in:darat,udara',
             'jenis_penugasan' => 'required|string|max:100',
             'dasar_hukum' => 'required|array|min:1',
             'dasar_hukum.*' => 'required|string',
-            'penanggung_jawab_id' => $isPerjalananDinas ? 'nullable' : 'required|integer',
-            'pengendali_teknis_id' => 'nullable|integer',
-            'ketua_tim_id' => $isPerjalananDinas ? 'nullable' : 'required|integer',
+            'penanggung_jawab_id' => $isPerjalananDinas ? 'nullable|integer|min:1' : 'required|integer|min:1',
+            'pengendali_teknis_id' => 'nullable|integer|min:1',
+            'ketua_tim_id' => $isPerjalananDinas ? 'nullable|integer|min:1' : 'required|integer|min:1',
             'anggota' => 'nullable|array',
-            'anggota.*' => 'integer',
+            'anggota.*' => 'required|integer|min:1|distinct',
             'penandatangan_type' => 'required|in:definitif,plh',
             'penandatangan_plh_nama' => 'required_if:penandatangan_type,plh|nullable|string|max:200',
             'penandatangan_plh_jabatan' => 'required_if:penandatangan_type,plh|nullable|string|max:200',
@@ -258,105 +148,31 @@ class PengawasanController extends Controller
 
         // Build full nomor ST (only if nomor_st_number is provided)
         $nomorST = null;
-        if (!empty($validated['nomor_st_number'])) {
-            $formatNomorSt = \App\Models\SystemSetting::where('key', 'format_nomor_st')->first()->value ?? '100.3.5.4/[NOMOR]/ST/ITKAB/[TAHUN]';
+        if (! empty($validated['nomor_st_number'])) {
+            $formatNomorSt = \App\Models\SystemSetting::valueFor('format_nomor_st') ?? '100.3.5.4/[NOMOR]/ST/ITKAB/[TAHUN]';
             $formatParts = explode('[NOMOR]', $formatNomorSt);
             $stPrefix = $formatParts[0] ?? '100.3.5.4/';
             $stSuffixRaw = $formatParts[1] ?? '/ST/ITKAB/[TAHUN]';
             $stSuffix = str_replace('[TAHUN]', $tahun, $stSuffixRaw);
-            $nomorST = $stPrefix . $validated['nomor_st_number'] . $stSuffix;
+            $nomorST = $stPrefix.$validated['nomor_st_number'].$stSuffix;
         }
 
-        // Check for duplicate personil (filter out null values)
-        $personil = collect([
-            $validated['penanggung_jawab_id'] ?? null,
-            $validated['pengendali_teknis_id'] ?? null,
-            $validated['ketua_tim_id'] ?? null,
-        ])->filter();
+        \Illuminate\Support\Facades\Validator::make(['nomor_st' => $nomorST], [
+            'nomor_st' => ['nullable', 'string', 'max:100', \Illuminate\Validation\Rule::unique('pengawasan')->ignore($pengawasan->id ?? null)],
+        ])->validate();
 
-        if (isset($validated['anggota'])) {
-            $personil = $personil->merge($validated['anggota']);
-        }
-
-        if ($personil->count() !== $personil->unique()->count()) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Personil tidak boleh duplikat dalam satu Surat Tugas!');
-        }
-
-        // Check if Perjalanan Dinas with Plt. Inspektur - only one person allowed
-        if ($isPerjalananDinas && $personil->count() > 0) {
-            $allPersonilIds = $personil->toArray();
-            $hasPltInspektur = false;
-            foreach ($allPersonilIds as $pid) {
-                $nama = $this->getPegawaiNameFromApi($pid);
-                if (stripos($nama, 'BOTTEN TANDIPADA') !== false) {
-                    $hasPltInspektur = true;
-                    break;
-                }
-            }
-
-            if ($hasPltInspektur && $personil->count() > 1) {
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', 'Jika Plt. Inspektur dipilih untuk Perjalanan Dinas Luar Daerah, tidak boleh ada pegawai lain yang dipilih!');
-            }
-        }
-
-        // Check if Ketua Tim or Anggota are already assigned in overlapping dates
-        $tanggalMulai = Carbon::parse($validated['tanggal_st']);
-        $tanggalSelesai = $tanggalMulai->copy()->addDays($validated['lama_penugasan'] - 1);
-
-        // Check Ketua Tim availability (check both as ketua_tim AND anggota) - only if not Perjalanan Dinas
-        if (!$isPerjalananDinas && isset($validated['ketua_tim_id']) && $validated['ketua_tim_id']) {
-            $ketuaTimConflict = $this->checkPersonilConflict(
-                $validated['ketua_tim_id'],
-                $tanggalMulai,
-                $tanggalSelesai,
-                null, // no ID for new record
-                ['ketua_tim', 'anggota'] // Check both roles
-            );
-
-            if ($ketuaTimConflict) {
-                $pegawaiName = $this->getPegawaiNameFromApi($validated['ketua_tim_id']);
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', "Ketua Tim ({$pegawaiName}) sudah bertugas sebagai {$ketuaTimConflict['role']} di rentang tanggal {$ketuaTimConflict['tanggal_mulai']} - {$ketuaTimConflict['tanggal_selesai']} pada pengawasan: {$ketuaTimConflict['nomor_st']}");
-            }
-        }
-
-        // Check Anggota availability (check both as anggota AND ketua_tim)
-        if (isset($validated['anggota']) && count($validated['anggota']) > 0) {
-            foreach ($validated['anggota'] as $anggotaId) {
-                if (!$anggotaId) continue; // Skip if null or empty
-
-                $anggotaConflict = $this->checkPersonilConflict(
-                    $anggotaId,
-                    $tanggalMulai,
-                    $tanggalSelesai,
-                    null, // no ID for new record
-                    ['ketua_tim', 'anggota'] // Check both roles
-                );
-
-                if ($anggotaConflict) {
-                    $pegawaiName = $this->getPegawaiNameFromApi($anggotaId);
-                    return redirect()->back()
-                        ->withInput()
-                        ->with('error', "Anggota ({$pegawaiName}) sudah bertugas sebagai {$anggotaConflict['role']} di rentang tanggal {$anggotaConflict['tanggal_mulai']} - {$anggotaConflict['tanggal_selesai']} pada pengawasan: {$anggotaConflict['nomor_st']}");
-                }
-            }
-        }
+        app(\App\Services\PenugasanService::class)->validate($validated);
 
         try {
             DB::beginTransaction();
 
-            $definitifNama = \App\Models\SystemSetting::where('key', 'definitif_nama')->first()->value ?? 'BOTTEN TANDIPADA';
-            $definitifNip = \App\Models\SystemSetting::where('key', 'definitif_nip')->first()->value ?? '196612141995031001';
-            $definitifJabatan = \App\Models\SystemSetting::where('key', 'definitif_jabatan')->first()->value ?? 'Plt. Inspektur';
-            $kopPemerintah = \App\Models\SystemSetting::where('key', 'kop_pemerintah')->first()->value ?? 'PEMERINTAH KABUPATEN PUNCAK JAYA';
-            $kopInstansi = \App\Models\SystemSetting::where('key', 'kop_instansi')->first()->value ?? 'INSPEKTORAT';
-            $kopJalan = \App\Models\SystemSetting::where('key', 'kop_jalan')->first()->value ?? 'Jalan Yos Sudarso Kotaraja Telp. (0969) 31014 Fax. (0969) 31015';
-            $kopEmail = \App\Models\SystemSetting::where('key', 'kop_email')->first()->value ?? 'Email: inspektorat@puncakjayakab.go.id';
+            $definitifNama = \App\Models\SystemSetting::valueFor('definitif_nama') ?? 'BOTTEN TANDIPADA';
+            $definitifNip = \App\Models\SystemSetting::valueFor('definitif_nip') ?? '196612141995031001';
+            $definitifJabatan = \App\Models\SystemSetting::valueFor('definitif_jabatan') ?? 'Plt. Inspektur';
+            $kopPemerintah = \App\Models\SystemSetting::valueFor('kop_pemerintah') ?? 'PEMERINTAH KABUPATEN PUNCAK JAYA';
+            $kopInstansi = \App\Models\SystemSetting::valueFor('kop_instansi') ?? 'INSPEKTORAT';
+            $kopJalan = \App\Models\SystemSetting::valueFor('kop_jalan') ?? 'Jalan Yos Sudarso Kotaraja Telp. (0969) 31014 Fax. (0969) 31015';
+            $kopEmail = \App\Models\SystemSetting::valueFor('kop_email') ?? 'Email: inspektorat@puncakjayakab.go.id';
 
             $pengawasan = Pengawasan::create([
                 'nomor_st' => $nomorST,
@@ -387,7 +203,7 @@ class PengawasanController extends Controller
                 foreach ($validated['anggota'] as $anggotaId) {
                     \Illuminate\Support\Facades\DB::table('pengawasan_anggota')->insert([
                         'pengawasan_id' => $pengawasan->id,
-                        'pegawai_id' => $anggotaId
+                        'pegawai_id' => $anggotaId,
                     ]);
                 }
             }
@@ -402,18 +218,22 @@ class PengawasanController extends Controller
                 }
             }
 
-            DB::commit();
-
             $this->createPersonilSnapshot($pengawasan);
+
+            DB::commit();
 
             return redirect()->route('pengawasan.index')
                 ->with('success', 'Data Pengawasan berhasil ditambahkan!');
         } catch (\Exception $e) {
             DB::rollBack();
+            if ($e instanceof \Illuminate\Validation\ValidationException || $e instanceof \App\Exceptions\PegawaiUnavailable) {
+                throw $e;
+            }
+            report($e);
 
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+                ->with('error', 'Data belum berhasil disimpan. Periksa data personil dan koneksi layanan pegawai, lalu coba kembali.');
         }
     }
 
@@ -424,7 +244,7 @@ class PengawasanController extends Controller
     {
         $pengawasan = Pengawasan::with(['dasarHukum'])
             ->findOrFail($id);
-        
+
         $this->injectPegawaiData([$pengawasan]);
 
         return view('pengawasan.show', compact('pengawasan'));
@@ -437,15 +257,17 @@ class PengawasanController extends Controller
     {
         $pengawasan = Pengawasan::with(['dasarHukum'])
             ->findOrFail($id);
-            
+
         $this->injectPegawaiData([$pengawasan]);
 
-        $response = \Illuminate\Support\Facades\Http::withToken(config('services.pegawai.token'))
-            ->get(config('services.pegawai.url'), ['per_page' => 1000]);
-        $pegawai = $response->successful() ? collect($response->json()['data'])->map(fn($p) => (object)$p) : collect();
+        $response = app(\App\Services\PegawaiService::class)->allResponse();
+        $pegawai = $response->successful() ? collect($response->json()['data'])->map(fn ($p) => (object) $p) : collect();
+        if (! $response->successful()) {
+            session()->flash('error', 'Layanan pegawai sementara tidak tersedia. Coba kembali sebelum menyimpan penugasan.');
+        }
         $tahun = date('Y', strtotime($pengawasan->tanggal_st));
-        
-        $formatNomorSt = \App\Models\SystemSetting::where('key', 'format_nomor_st')->first()->value ?? '100.3.5.4/[NOMOR]/ST/ITKAB/[TAHUN]';
+
+        $formatNomorSt = \App\Models\SystemSetting::valueFor('format_nomor_st') ?? '100.3.5.4/[NOMOR]/ST/ITKAB/[TAHUN]';
         $formatParts = explode('[NOMOR]', $formatNomorSt);
         $stPrefix = $formatParts[0] ?? '100.3.5.4/';
         $stSuffixRaw = $formatParts[1] ?? '/ST/ITKAB/[TAHUN]';
@@ -471,18 +293,18 @@ class PengawasanController extends Controller
         $validated = $request->validate([
             'nomor_st_number' => 'nullable|string|max:50',
             'tanggal_st' => 'required|date',
-            'lama_penugasan' => 'required|integer|min:1',
+            'lama_penugasan' => 'required|integer|min:1|max:366',
             'uraian_penugasan' => 'required|string',
             'lokasi_penugasan' => 'required|string|max:200',
             'alat_angkut' => 'required|in:darat,udara',
             'jenis_penugasan' => 'required|string|max:100',
             'dasar_hukum' => 'required|array|min:1',
             'dasar_hukum.*' => 'required|string',
-            'penanggung_jawab_id' => $isPerjalananDinas ? 'nullable' : 'required|integer',
-            'pengendali_teknis_id' => 'nullable|integer',
-            'ketua_tim_id' => $isPerjalananDinas ? 'nullable' : 'required|integer',
+            'penanggung_jawab_id' => $isPerjalananDinas ? 'nullable|integer|min:1' : 'required|integer|min:1',
+            'pengendali_teknis_id' => 'nullable|integer|min:1',
+            'ketua_tim_id' => $isPerjalananDinas ? 'nullable|integer|min:1' : 'required|integer|min:1',
             'anggota' => 'nullable|array',
-            'anggota.*' => 'integer',
+            'anggota.*' => 'required|integer|min:1|distinct',
             'penandatangan_type' => 'required|in:definitif,plh',
             'penandatangan_plh_nama' => 'required_if:penandatangan_type,plh|nullable|string|max:200',
             'penandatangan_plh_jabatan' => 'required_if:penandatangan_type,plh|nullable|string|max:200',
@@ -503,109 +325,33 @@ class PengawasanController extends Controller
             'penandatangan_plh_jabatan.required_if' => 'Jabatan Plh. wajib diisi jika memilih Plh.',
         ]);
 
-
-
         // Build full nomor ST (only if nomor_st_number is provided)
         $nomorST = null;
-        if (!empty($validated['nomor_st_number'])) {
-            $formatNomorSt = \App\Models\SystemSetting::where('key', 'format_nomor_st')->first()->value ?? '100.3.5.4/[NOMOR]/ST/ITKAB/[TAHUN]';
+        if (! empty($validated['nomor_st_number'])) {
+            $formatNomorSt = \App\Models\SystemSetting::valueFor('format_nomor_st') ?? '100.3.5.4/[NOMOR]/ST/ITKAB/[TAHUN]';
             $formatParts = explode('[NOMOR]', $formatNomorSt);
             $stPrefix = $formatParts[0] ?? '100.3.5.4/';
             $stSuffixRaw = $formatParts[1] ?? '/ST/ITKAB/[TAHUN]';
             $stSuffix = str_replace('[TAHUN]', $tahun, $stSuffixRaw);
-            $nomorST = $stPrefix . $validated['nomor_st_number'] . $stSuffix;
+            $nomorST = $stPrefix.$validated['nomor_st_number'].$stSuffix;
         }
 
-        // Check for duplicate personil (filter out null values)
-        $personil = collect([
-            $validated['penanggung_jawab_id'] ?? null,
-            $validated['pengendali_teknis_id'] ?? null,
-            $validated['ketua_tim_id'] ?? null,
-        ])->filter();
+        \Illuminate\Support\Facades\Validator::make(['nomor_st' => $nomorST], [
+            'nomor_st' => ['nullable', 'string', 'max:100', \Illuminate\Validation\Rule::unique('pengawasan')->ignore($pengawasan->id ?? null)],
+        ])->validate();
 
-        if (isset($validated['anggota'])) {
-            $personil = $personil->merge($validated['anggota']);
-        }
-
-        if ($personil->count() !== $personil->unique()->count()) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Personil tidak boleh duplikat dalam satu Surat Tugas!');
-        }
-
-        // Check if Perjalanan Dinas with Plt. Inspektur - only one person allowed
-        if ($isPerjalananDinas && $personil->count() > 0) {
-            $allPersonilIds = $personil->toArray();
-            $hasPltInspektur = false;
-            foreach ($allPersonilIds as $pid) {
-                $nama = $this->getPegawaiNameFromApi($pid);
-                if (stripos($nama, 'BOTTEN TANDIPADA') !== false) {
-                    $hasPltInspektur = true;
-                    break;
-                }
-            }
-
-            if ($hasPltInspektur && $personil->count() > 1) {
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', 'Jika Plt. Inspektur dipilih untuk Perjalanan Dinas Luar Daerah, tidak boleh ada pegawai lain yang dipilih!');
-            }
-        }
-
-        // Check if Ketua Tim or Anggota are already assigned in overlapping dates
-        $tanggalMulai = Carbon::parse($validated['tanggal_st']);
-        $tanggalSelesai = $tanggalMulai->copy()->addDays($validated['lama_penugasan'] - 1);
-
-        // Check Ketua Tim availability (check both as ketua_tim AND anggota) - only if not Perjalanan Dinas
-        if (!$isPerjalananDinas && isset($validated['ketua_tim_id']) && $validated['ketua_tim_id']) {
-            $ketuaTimConflict = $this->checkPersonilConflict(
-                $validated['ketua_tim_id'],
-                $tanggalMulai,
-                $tanggalSelesai,
-                $id, // exclude current pengawasan
-                ['ketua_tim', 'anggota'] // Check both roles
-            );
-
-            if ($ketuaTimConflict) {
-                $pegawaiName = $this->getPegawaiNameFromApi($validated['ketua_tim_id']);
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', "Ketua Tim ({$pegawaiName}) sudah bertugas sebagai {$ketuaTimConflict['role']} di rentang tanggal {$ketuaTimConflict['tanggal_mulai']} - {$ketuaTimConflict['tanggal_selesai']} pada pengawasan: {$ketuaTimConflict['nomor_st']}");
-            }
-        }
-
-        // Check Anggota availability (check both as anggota AND ketua_tim)
-        if (isset($validated['anggota']) && count($validated['anggota']) > 0) {
-            foreach ($validated['anggota'] as $anggotaId) {
-                if (!$anggotaId) continue; // Skip if null or empty
-
-                $anggotaConflict = $this->checkPersonilConflict(
-                    $anggotaId,
-                    $tanggalMulai,
-                    $tanggalSelesai,
-                    $id, // exclude current pengawasan
-                    ['ketua_tim', 'anggota'] // Check both roles
-                );
-
-                if ($anggotaConflict) {
-                    $pegawaiName = $this->getPegawaiNameFromApi($anggotaId);
-                    return redirect()->back()
-                        ->withInput()
-                        ->with('error', "Anggota ({$pegawaiName}) sudah bertugas sebagai {$anggotaConflict['role']} di rentang tanggal {$anggotaConflict['tanggal_mulai']} - {$anggotaConflict['tanggal_selesai']} pada pengawasan: {$anggotaConflict['nomor_st']}");
-                }
-            }
-        }
+        app(\App\Services\PenugasanService::class)->validate($validated, $pengawasan);
 
         try {
             DB::beginTransaction();
 
-            $definitifNama = $pengawasan->penandatangan_definitif_nama ?? \App\Models\SystemSetting::where('key', 'definitif_nama')->first()->value ?? 'BOTTEN TANDIPADA';
-            $definitifNip = $pengawasan->penandatangan_definitif_nip ?? \App\Models\SystemSetting::where('key', 'definitif_nip')->first()->value ?? '196612141995031001';
-            $definitifJabatan = $pengawasan->penandatangan_definitif_jabatan ?? \App\Models\SystemSetting::where('key', 'definitif_jabatan')->first()->value ?? 'Plt. Inspektur';
-            $kopPemerintah = $pengawasan->kop_pemerintah ?? \App\Models\SystemSetting::where('key', 'kop_pemerintah')->first()->value ?? 'PEMERINTAH KABUPATEN PUNCAK JAYA';
-            $kopInstansi = $pengawasan->kop_instansi ?? \App\Models\SystemSetting::where('key', 'kop_instansi')->first()->value ?? 'INSPEKTORAT';
-            $kopJalan = $pengawasan->kop_jalan ?? \App\Models\SystemSetting::where('key', 'kop_jalan')->first()->value ?? 'Jalan Yos Sudarso Kotaraja Telp. (0969) 31014 Fax. (0969) 31015';
-            $kopEmail = $pengawasan->kop_email ?? \App\Models\SystemSetting::where('key', 'kop_email')->first()->value ?? 'Email: inspektorat@puncakjayakab.go.id';
+            $definitifNama = $pengawasan->penandatangan_definitif_nama ?? \App\Models\SystemSetting::valueFor('definitif_nama') ?? 'BOTTEN TANDIPADA';
+            $definitifNip = $pengawasan->penandatangan_definitif_nip ?? \App\Models\SystemSetting::valueFor('definitif_nip') ?? '196612141995031001';
+            $definitifJabatan = $pengawasan->penandatangan_definitif_jabatan ?? \App\Models\SystemSetting::valueFor('definitif_jabatan') ?? 'Plt. Inspektur';
+            $kopPemerintah = $pengawasan->kop_pemerintah ?? \App\Models\SystemSetting::valueFor('kop_pemerintah') ?? 'PEMERINTAH KABUPATEN PUNCAK JAYA';
+            $kopInstansi = $pengawasan->kop_instansi ?? \App\Models\SystemSetting::valueFor('kop_instansi') ?? 'INSPEKTORAT';
+            $kopJalan = $pengawasan->kop_jalan ?? \App\Models\SystemSetting::valueFor('kop_jalan') ?? 'Jalan Yos Sudarso Kotaraja Telp. (0969) 31014 Fax. (0969) 31015';
+            $kopEmail = $pengawasan->kop_email ?? \App\Models\SystemSetting::valueFor('kop_email') ?? 'Email: inspektorat@puncakjayakab.go.id';
 
             $pengawasan->update([
                 'nomor_st' => $nomorST,
@@ -636,7 +382,7 @@ class PengawasanController extends Controller
                 foreach ($validated['anggota'] as $anggotaId) {
                     \Illuminate\Support\Facades\DB::table('pengawasan_anggota')->insert([
                         'pengawasan_id' => $pengawasan->id,
-                        'pegawai_id' => $anggotaId
+                        'pegawai_id' => $anggotaId,
                     ]);
                 }
             }
@@ -652,18 +398,22 @@ class PengawasanController extends Controller
                 }
             }
 
-            DB::commit();
-
             $this->createPersonilSnapshot($pengawasan);
+
+            DB::commit();
 
             return redirect()->route('pengawasan.index')
                 ->with('success', 'Data Pengawasan berhasil diupdate!');
         } catch (\Exception $e) {
             DB::rollBack();
+            if ($e instanceof \Illuminate\Validation\ValidationException || $e instanceof \App\Exceptions\PegawaiUnavailable) {
+                throw $e;
+            }
+            report($e);
 
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+                ->with('error', 'Data belum berhasil disimpan. Periksa data personil dan koneksi layanan pegawai, lalu coba kembali.');
         }
     }
 
@@ -676,41 +426,36 @@ class PengawasanController extends Controller
             'file_laporan' => 'nullable|file|mimes:pdf|max:10240', // max 10MB
         ]);
 
-        if ($validated['status'] === 'selesai' && !$pengawasan->file_laporan && !$request->hasFile('file_laporan')) {
+        if ($validated['status'] === 'selesai' && ! $pengawasan->file_laporan && ! $request->hasFile('file_laporan')) {
             return redirect()->back()
                 ->with('error', 'Status tidak dapat diubah menjadi Selesai sebelum mengupload file laporan.');
         }
 
+        $newPath = null;
+        $oldPath = $pengawasan->file_laporan;
         try {
-            \Illuminate\Support\Facades\DB::beginTransaction();
-
-            $updateData = ['status' => $validated['status']];
-
             if ($request->hasFile('file_laporan')) {
-                // Delete old file if exists
-                if ($pengawasan->file_laporan) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($pengawasan->file_laporan);
+                $newPath = $request->file('file_laporan')->store('laporan_pengawasan', 'public');
+                if (! $newPath) {
+                    throw new \RuntimeException('Unable to store report');
                 }
-
-                $file = $request->file('file_laporan');
-                $filename = time() . '_' . $file->getClientOriginalName();
-                $path = $file->storeAs('laporan_pengawasan', $filename, 'public');
-                $updateData['file_laporan'] = $path;
             }
+            DB::transaction(function () use ($pengawasan, $validated, $newPath) {
+                $pengawasan->update(['status' => $validated['status'], ...($newPath ? ['file_laporan' => $newPath] : [])]);
+            });
+        } catch (\Throwable $e) {
+            if ($newPath) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($newPath);
+            }
+            report($e);
 
-            \Illuminate\Support\Facades\DB::table('pengawasan')
-                ->where('id', $pengawasan->id)
-                ->update(array_merge($updateData, ['updated_at' => now()]));
-
-            \Illuminate\Support\Facades\DB::commit();
-
-            return redirect()->route('pengawasan.index')
-                ->with('success', 'Status dan laporan berhasil diperbarui!');
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\DB::rollBack();
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            return back()->with('error', 'Laporan gagal disimpan. Laporan sebelumnya tetap tersedia.');
         }
+        if ($newPath && $oldPath) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+        }
+
+        return redirect()->route('pengawasan.index')->with('success', 'Status dan laporan berhasil diperbarui!');
     }
 
     /**
@@ -718,26 +463,23 @@ class PengawasanController extends Controller
      */
     public function destroy(string $id)
     {
+        $pengawasan = Pengawasan::findOrFail($id);
         try {
-            $pengawasan = Pengawasan::findOrFail($id);
-            $nomorST = $pengawasan->nomor_st;
+            DB::transaction(function () use ($pengawasan) {
+                DB::table('pengawasan_anggota')->where('pengawasan_id', $pengawasan->id)->delete();
+                $pengawasan->dasarHukum()->delete();
+                $pengawasan->delete();
+            });
+        } catch (\Throwable $e) {
+            report($e);
 
-            if ($pengawasan->file_laporan) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($pengawasan->file_laporan);
-            }
-
-            // Manual cascade delete because DB_FOREIGN_KEYS=false in SQLite
-            \Illuminate\Support\Facades\DB::table('pengawasan_anggota')->where('pengawasan_id', $id)->delete();
-            \Illuminate\Support\Facades\DB::table('pengawasan_dasar')->where('pengawasan_id', $id)->delete();
-
-            $pengawasan->delete();
-
-            return redirect()->route('pengawasan.index')
-                ->with('success', 'Data Pengawasan ' . $nomorST . ' berhasil dihapus!');
-        } catch (\Exception $e) {
-            return redirect()->route('pengawasan.index')
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            return redirect()->route('pengawasan.index')->with('error', 'Pengawasan gagal dihapus. Silakan coba kembali.');
         }
+        if ($pengawasan->file_laporan) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($pengawasan->file_laporan);
+        }
+
+        return redirect()->route('pengawasan.index')->with('success', 'Data Pengawasan berhasil dihapus!');
     }
 
     /**
@@ -752,13 +494,13 @@ class PengawasanController extends Controller
         if ($start && $end) {
             $startDate = \Carbon\Carbon::parse($start);
             $endDate = \Carbon\Carbon::parse($end);
-            
+
             // Get all pengawasan that overlap with this range
-            $pengawasan = Pengawasan::where(function($query) use ($startDate, $endDate) {
+            $pengawasan = Pengawasan::where(function ($query) use ($startDate, $endDate) {
                 // If the start date is in the range, or end date is in the range
                 // Since we only store tanggal_st and lama_penugasan, we can just get all for the year range
                 $query->whereYear('tanggal_st', '>=', $startDate->year)
-                      ->whereYear('tanggal_st', '<=', $endDate->year);
+                    ->whereYear('tanggal_st', '<=', $endDate->year);
             })->get();
         } else {
             $bulan = $request->get('bulan', now()->month);
@@ -771,46 +513,46 @@ class PengawasanController extends Controller
         $this->injectPegawaiData($pengawasan);
 
         $pengawasan = $pengawasan->map(function ($item) {
-                // Calculate end date based on lama_penugasan
-                $tanggalMulai = $item->tanggal_st;
-                $tanggalSelesai = $tanggalMulai ? $tanggalMulai->copy()->addDays($item->lama_penugasan - 1) : null;
-                $anggota = [];
-                if (isset($item->anggota)) {
-                    foreach($item->anggota as $a) {
-                        $anggota[] = $a->nama;
-                    }
+            // Calculate end date based on lama_penugasan
+            $tanggalMulai = $item->tanggal_st;
+            $tanggalSelesai = $tanggalMulai ? $tanggalMulai->copy()->addDays($item->lama_penugasan - 1) : null;
+            $anggota = [];
+            if (isset($item->anggota)) {
+                foreach ($item->anggota as $a) {
+                    $anggota[] = $a->nama;
                 }
+            }
 
-                return [
-                    'id' => $item->id,
-                    'nomor_st' => $item->nomor_st,
-                    'tanggal_st' => $tanggalMulai ? $tanggalMulai->format('Y-m-d') : null,
-                    'jenis' => $item->jenis_penugasan,
-                    'uraian' => $item->uraian_penugasan,
-                    'lokasi' => $item->lokasi_penugasan,
-                    'lama_penugasan' => $item->lama_penugasan,
-                    'tanggal_mulai' => $tanggalMulai ? $tanggalMulai->format('Y-m-d') : null,
-                    'tanggal_selesai' => $tanggalSelesai ? $tanggalSelesai->format('Y-m-d') : null,
-                    'penanggung_jawab' => $item->penanggungJawab ? $item->penanggungJawab->nama : null,
-                    'pengendali_teknis' => $item->pengendaliTeknis ? $item->pengendaliTeknis->nama : null,
-                    'ketua_tim' => $item->ketuaTim ? $item->ketuaTim->nama : null,
-                    'anggota' => $anggota,
-                    'status' => $item->status,
-                    'status_label' => $item->status_label,
-                    'file_laporan' => $item->file_laporan,
-                    // FullCalendar fields
-                    'title' => $item->nomor_st,
-                    'start' => $tanggalMulai ? $tanggalMulai->format('Y-m-d') : null,
-                    // FullCalendar expects end date to be exclusive for all-day events
-                    'end' => $tanggalSelesai ? $tanggalSelesai->copy()->addDay()->format('Y-m-d') : null,
-                    'url' => route('pengawasan.show', $item->id),
-                    'classNames' => $item->status === 'selesai' ? ['event-selesai'] : ['event-belum-selesai'],
-                    'allDay' => true,
-                ];
-            })
+            return [
+                'id' => $item->id,
+                'nomor_st' => $item->nomor_st,
+                'tanggal_st' => $tanggalMulai ? $tanggalMulai->format('Y-m-d') : null,
+                'jenis' => $item->jenis_penugasan,
+                'uraian' => $item->uraian_penugasan,
+                'lokasi' => $item->lokasi_penugasan,
+                'lama_penugasan' => $item->lama_penugasan,
+                'tanggal_mulai' => $tanggalMulai ? $tanggalMulai->format('Y-m-d') : null,
+                'tanggal_selesai' => $tanggalSelesai ? $tanggalSelesai->format('Y-m-d') : null,
+                'penanggung_jawab' => $item->penanggungJawab ? $item->penanggungJawab->nama : null,
+                'pengendali_teknis' => $item->pengendaliTeknis ? $item->pengendaliTeknis->nama : null,
+                'ketua_tim' => $item->ketuaTim ? $item->ketuaTim->nama : null,
+                'anggota' => $anggota,
+                'status' => $item->status,
+                'status_label' => $item->status_label,
+                'file_laporan' => $item->file_laporan,
+                // FullCalendar fields
+                'title' => $item->nomor_st,
+                'start' => $tanggalMulai ? $tanggalMulai->format('Y-m-d') : null,
+                // FullCalendar expects end date to be exclusive for all-day events
+                'end' => $tanggalSelesai ? $tanggalSelesai->copy()->addDay()->format('Y-m-d') : null,
+                'url' => route('pengawasan.show', $item->id),
+                'classNames' => $item->status === 'selesai' ? ['event-selesai'] : ['event-belum-selesai'],
+                'allDay' => true,
+            ];
+        })
             ->filter(function ($item) use ($startDate, $endDate) {
                 // Filter to only include pengawasan that overlap with the specified range
-                if (!$item['tanggal_mulai'] || !$item['tanggal_selesai']) {
+                if (! $item['tanggal_mulai'] || ! $item['tanggal_selesai']) {
                     return false;
                 }
 
@@ -832,7 +574,7 @@ class PengawasanController extends Controller
     {
         $pengawasan = Pengawasan::with(['dasarHukum'])
             ->findOrFail($id);
-            
+
         $this->injectPegawaiData([$pengawasan]);
 
         $pegawaiPlh = $this->resolvePegawaiPlh($pengawasan);
@@ -861,7 +603,7 @@ class PengawasanController extends Controller
         ]);
 
         // Stream PDF (preview di tab baru)
-        $filename = 'Surat_Tugas_' . str_replace(['/', ' '], '_', $pengawasan->nomor_st) . '.pdf';
+        $filename = 'Surat_Tugas_'.str_replace(['/', ' '], '_', $pengawasan->nomor_st).'.pdf';
 
         return $pdf->stream($filename);
     }
@@ -869,61 +611,16 @@ class PengawasanController extends Controller
     /**
      * Check if personil has conflict with existing pengawasan in date range
      *
-     * @param int $pegawaiId
-     * @param Carbon $tanggalMulai
-     * @param Carbon $tanggalSelesai
-     * @param int|null $excludePengawasanId - ID pengawasan yang dikecualikan (untuk edit)
-     * @param array $roles - Roles to check: ['ketua_tim', 'anggota']
+     * @param  int  $pegawaiId
+     * @param  Carbon  $tanggalMulai
+     * @param  Carbon  $tanggalSelesai
+     * @param  int|null  $excludePengawasanId  - ID pengawasan yang dikecualikan (untuk edit)
+     * @param  array  $roles  - Roles to check: ['ketua_tim', 'anggota']
      * @return array|null - Returns conflict info or null if no conflict
      */
     private function checkPersonilConflict($pegawaiId, $tanggalMulai, $tanggalSelesai, $excludePengawasanId = null, $roles = ['ketua_tim', 'anggota'])
     {
-        // Query pengawasan yang overlap dengan rentang tanggal
-        $query = Pengawasan::query();
-
-        // Exclude current pengawasan if editing
-        if ($excludePengawasanId) {
-            $query->where('id', '!=', $excludePengawasanId);
-        }
-
-        // Get all pengawasan
-        $allPengawasan = $query->get();
-
-        foreach ($allPengawasan as $pengawasan) {
-            $existingMulai = Carbon::parse($pengawasan->tanggal_st);
-            $existingSelesai = $existingMulai->copy()->addDays($pengawasan->lama_penugasan - 1);
-
-            // Check if dates overlap
-            $isOverlap = $tanggalMulai->lte($existingSelesai) && $tanggalSelesai->gte($existingMulai);
-
-            if (!$isOverlap) {
-                continue;
-            }
-
-            // Check if pegawai is assigned in the specified roles
-            $assignedRole = null;
-
-            if (in_array('ketua_tim', $roles) && $pengawasan->ketua_tim_id == $pegawaiId) {
-                $assignedRole = 'Ketua Tim';
-            }
-
-            // 4. Sebagai Anggota
-            if (in_array('anggota', $roles) && \Illuminate\Support\Facades\DB::table('pengawasan_anggota')->where('pengawasan_id', $pengawasan->id)->where('pegawai_id', $pegawaiId)->exists()) {
-                $assignedRole = 'Anggota';
-            }
-
-            if ($assignedRole) {
-                return [
-                    'nomor_st' => $pengawasan->nomor_st,
-                    'tanggal_mulai' => $existingMulai->format('d/m/Y'),
-                    'tanggal_selesai' => $existingSelesai->format('d/m/Y'),
-                    'jenis_penugasan' => $pengawasan->jenis_penugasan,
-                    'role' => $assignedRole,
-                ];
-            }
-        }
-
-        return null;
+        return app(\App\Services\PenugasanService::class)->conflict($pegawaiId, $tanggalMulai, $tanggalSelesai, $excludePengawasanId, $roles);
     }
 
     /**
@@ -972,10 +669,13 @@ class PengawasanController extends Controller
         $pengawasan = Pengawasan::with(['dasarHukum'])->findOrFail($id);
         $this->injectPegawaiData([$pengawasan]);
         $pegawai = null;
-        if ($pengawasan->penanggung_jawab_id == $pegawai_id) $pegawai = $pengawasan->penanggungJawab;
-        elseif ($pengawasan->pengendali_teknis_id == $pegawai_id) $pegawai = $pengawasan->pengendaliTeknis;
-        elseif ($pengawasan->ketua_tim_id == $pegawai_id) $pegawai = $pengawasan->ketuaTim;
-        else {
+        if ($pengawasan->penanggung_jawab_id == $pegawai_id) {
+            $pegawai = $pengawasan->penanggungJawab;
+        } elseif ($pengawasan->pengendali_teknis_id == $pegawai_id) {
+            $pegawai = $pengawasan->pengendaliTeknis;
+        } elseif ($pengawasan->ketua_tim_id == $pegawai_id) {
+            $pegawai = $pengawasan->ketuaTim;
+        } else {
             foreach ($pengawasan->anggota as $a) {
                 if ($a->id == $pegawai_id) {
                     $pegawai = $a;
@@ -984,7 +684,7 @@ class PengawasanController extends Controller
             }
         }
 
-        if (!$pegawai) {
+        if (! $pegawai) {
             return redirect()->back()->with('error', 'Gagal mengambil data pegawai dari API untuk dicetak.');
         }
 
@@ -1009,7 +709,7 @@ class PengawasanController extends Controller
         $pdf = PDF::loadView('pengawasan.cetak-sppd', compact('pengawasan', 'pegawai', 'role', 'pegawaiPlh'));
         $pdf->setPaper('A4', 'portrait');
 
-        return $pdf->stream('SPPD-' . $cleanNama . '-' . $cleanNomorSt . '.pdf');
+        return $pdf->stream('SPPD-'.$cleanNama.'-'.$cleanNomorSt.'.pdf');
     }
 
     /**
@@ -1020,10 +720,13 @@ class PengawasanController extends Controller
         $pengawasan = Pengawasan::with(['dasarHukum'])->findOrFail($id);
         $this->injectPegawaiData([$pengawasan]);
         $pegawai = null;
-        if ($pengawasan->penanggung_jawab_id == $pegawai_id) $pegawai = $pengawasan->penanggungJawab;
-        elseif ($pengawasan->pengendali_teknis_id == $pegawai_id) $pegawai = $pengawasan->pengendaliTeknis;
-        elseif ($pengawasan->ketua_tim_id == $pegawai_id) $pegawai = $pengawasan->ketuaTim;
-        else {
+        if ($pengawasan->penanggung_jawab_id == $pegawai_id) {
+            $pegawai = $pengawasan->penanggungJawab;
+        } elseif ($pengawasan->pengendali_teknis_id == $pegawai_id) {
+            $pegawai = $pengawasan->pengendaliTeknis;
+        } elseif ($pengawasan->ketua_tim_id == $pegawai_id) {
+            $pegawai = $pengawasan->ketuaTim;
+        } else {
             foreach ($pengawasan->anggota as $a) {
                 if ($a->id == $pegawai_id) {
                     $pegawai = $a;
@@ -1032,7 +735,7 @@ class PengawasanController extends Controller
             }
         }
 
-        if (!$pegawai) {
+        if (! $pegawai) {
             return redirect()->back()->with('error', 'Gagal mengambil data pegawai dari API untuk dicetak.');
         }
         $nominal = $request->input('nominal', 0);
@@ -1060,7 +763,7 @@ class PengawasanController extends Controller
         // Set paper to A5 landscape (half of A4)
         $pdf->setPaper('A5', 'landscape');
 
-        return $pdf->stream('Kwitansi-' . $cleanNama . '-' . $cleanNomorSt . '.pdf');
+        return $pdf->stream('Kwitansi-'.$cleanNama.'-'.$cleanNomorSt.'.pdf');
     }
 
     public function laporan(Request $request)
@@ -1080,19 +783,19 @@ class PengawasanController extends Controller
         $pengawasan = $query->orderBy('tanggal_st', 'desc')
             ->paginate(10)
             ->withQueryString();
-            
+
         $this->injectPegawaiData($pengawasan->items());
 
         // Get unique years and types for filters
         $tahunList = Pengawasan::whereNotNull('tanggal_st')
             ->pluck('tanggal_st')
-            ->map(function($date) {
+            ->map(function ($date) {
                 return \Carbon\Carbon::parse($date)->year;
             })
             ->unique()
             ->sortDesc()
             ->values();
-            
+
         $jenisList = Pengawasan::whereNotNull('jenis_penugasan')
             ->select('jenis_penugasan')
             ->distinct()
@@ -1105,15 +808,4 @@ class PengawasanController extends Controller
     /**
      * Helper to get Pegawai name from API list
      */
-    private function getPegawaiNameFromApi($id)
-    {
-        $response = \Illuminate\Support\Facades\Http::withToken(config('services.pegawai.token'))
-            ->get(config('services.pegawai.url'), ['per_page' => 1000]);
-        if ($response->successful()) {
-            foreach ($response->json()['data'] as $p) {
-                if ($p['id'] == $id) return $p['nama'];
-            }
-        }
-        return 'Pegawai';
-    }
 }

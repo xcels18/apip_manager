@@ -1,9 +1,9 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PegawaiController;
 use App\Http\Controllers\PengawasanController;
+use Illuminate\Support\Facades\Route;
 
 // Landing Page
 Route::get('/', function () {
@@ -12,8 +12,8 @@ Route::get('/', function () {
 
 // Authentication routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
-Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Protected routes
 Route::middleware('auth')->group(function () {

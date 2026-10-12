@@ -53,7 +53,7 @@
             </div>
         </div>
         <div class="relative z-10 mt-2">
-            <div class="text-4xl font-black text-on-surface leading-none tracking-tight">{{ $totalPegawai }}</div>
+            <div class="text-4xl font-black text-on-surface leading-none tracking-tight">{{ $totalPegawai ?? '—' }}</div>
             <p class="text-body-sm font-medium text-on-surface-variant mt-3 flex items-center gap-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Seluruh APIP terdaftar
             </p>

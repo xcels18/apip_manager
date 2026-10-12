@@ -3,11 +3,6 @@
 @section('title', 'Laporan Pengawasan')
 
 @section('content')
-@extends('layouts.app')
-
-@section('title', 'Laporan Pengawasan')
-
-@section('content')
 <!-- Breadcrumbs & Header -->
 <div class="px-margin-desktop pt-8 pb-6 flex flex-col gap-4">
     <nav class="flex items-center text-on-surface-variant text-label-sm font-label-sm gap-2">

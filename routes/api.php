@@ -1,10 +1,9 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\PengawasanApiController;
 use App\Http\Controllers\Api\PegawaiApiController;
+use App\Http\Controllers\Api\PengawasanApiController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,7 +17,7 @@ use App\Http\Controllers\Api\PegawaiApiController;
 */
 
 // Public routes
-Route::post('/login', [AuthController::class, 'login'])->name('api.login');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login')->name('api.login');
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -36,7 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
     ]);
 
     // Pegawai routes
-    Route::apiResource('pegawai', PegawaiApiController::class)->names([
+    Route::apiResource('pegawai', PegawaiApiController::class)->only(['index', 'show'])->names([
         'index' => 'api.pegawai.index',
         'store' => 'api.pegawai.store',
         'show' => 'api.pegawai.show',
@@ -44,4 +43,3 @@ Route::middleware('auth:sanctum')->group(function () {
         'destroy' => 'api.pegawai.destroy',
     ]);
 });
-

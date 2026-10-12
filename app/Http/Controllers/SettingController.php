@@ -11,19 +11,19 @@ class SettingController extends Controller
 {
     public function index()
     {
-        $apiUrl = \App\Models\SystemSetting::where('key', 'pegawai_api_url')->first()->value ?? config('services.pegawai.url');
-        $apiToken = \App\Models\SystemSetting::where('key', 'pegawai_api_token')->first()->value ?? config('services.pegawai.token');
-        
-        $definitifNama = \App\Models\SystemSetting::where('key', 'definitif_nama')->first()->value ?? 'BOTTEN TANDIPADA';
-        $definitifNip = \App\Models\SystemSetting::where('key', 'definitif_nip')->first()->value ?? '196612141995031001';
-        $definitifJabatan = \App\Models\SystemSetting::where('key', 'definitif_jabatan')->first()->value ?? 'Plt. Inspektur';
-        $definitifPangkat = \App\Models\SystemSetting::where('key', 'definitif_pangkat')->first()->value ?? 'Pembina Utama Muda (IV/c)';
+        $apiUrl = \App\Models\SystemSetting::valueFor('pegawai_api_url') ?? config('services.pegawai.url');
+        $apiToken = \App\Models\SystemSetting::valueFor('pegawai_api_token') ?? config('services.pegawai.token');
 
-        $kopPemerintah = \App\Models\SystemSetting::where('key', 'kop_pemerintah')->first()->value ?? 'PEMERINTAH KABUPATEN PUNCAK JAYA';
-        $kopInstansi = \App\Models\SystemSetting::where('key', 'kop_instansi')->first()->value ?? 'INSPEKTORAT';
-        $kopJalan = \App\Models\SystemSetting::where('key', 'kop_jalan')->first()->value ?? 'Jalan Yos Sudarso Kotaraja Telp. (0969) 31014 Fax. (0969) 31015';
-        $kopEmail = \App\Models\SystemSetting::where('key', 'kop_email')->first()->value ?? 'Email: inspektorat@puncakjayakab.go.id';
-        $formatNomorSt = \App\Models\SystemSetting::where('key', 'format_nomor_st')->first()->value ?? '100.3.5.4/[NOMOR]/ST/ITKAB/[TAHUN]';
+        $definitifNama = \App\Models\SystemSetting::valueFor('definitif_nama') ?? 'BOTTEN TANDIPADA';
+        $definitifNip = \App\Models\SystemSetting::valueFor('definitif_nip') ?? '196612141995031001';
+        $definitifJabatan = \App\Models\SystemSetting::valueFor('definitif_jabatan') ?? 'Plt. Inspektur';
+        $definitifPangkat = \App\Models\SystemSetting::valueFor('definitif_pangkat') ?? 'Pembina Utama Muda (IV/c)';
+
+        $kopPemerintah = \App\Models\SystemSetting::valueFor('kop_pemerintah') ?? 'PEMERINTAH KABUPATEN PUNCAK JAYA';
+        $kopInstansi = \App\Models\SystemSetting::valueFor('kop_instansi') ?? 'INSPEKTORAT';
+        $kopJalan = \App\Models\SystemSetting::valueFor('kop_jalan') ?? 'Jalan Yos Sudarso Kotaraja Telp. (0969) 31014 Fax. (0969) 31015';
+        $kopEmail = \App\Models\SystemSetting::valueFor('kop_email') ?? 'Email: inspektorat@puncakjayakab.go.id';
+        $formatNomorSt = \App\Models\SystemSetting::valueFor('format_nomor_st') ?? '100.3.5.4/[NOMOR]/ST/ITKAB/[TAHUN]';
 
         return view('setting.index', compact('apiUrl', 'apiToken', 'definitifNama', 'definitifNip', 'definitifJabatan', 'definitifPangkat', 'kopPemerintah', 'kopInstansi', 'kopJalan', 'kopEmail', 'formatNomorSt'));
     }
@@ -34,7 +34,7 @@ class SettingController extends Controller
             'name' => 'required|string|max:255',
             'nip' => 'nullable|string|max:20',
             'jabatan' => 'nullable|string|max:255',
-            'email' => 'required|email|unique:users,email,' . Auth::id(),
+            'email' => 'required|email|unique:users,email,'.Auth::id(),
         ], [
             'name.required' => 'Nama harus diisi',
             'email.required' => 'Email harus diisi',
@@ -69,7 +69,7 @@ class SettingController extends Controller
         $user = Auth::user();
 
         // Check if current password is correct
-        if (!Hash::check($request->current_password, $user->password)) {
+        if (! Hash::check($request->current_password, $user->password)) {
             return redirect()->route('setting.index')
                 ->withErrors(['current_password' => 'Password lama tidak sesuai'])
                 ->withInput();
@@ -83,9 +83,10 @@ class SettingController extends Controller
         return redirect()->route('setting.index')
             ->with('success', 'Password berhasil diubah!');
     }
+
     public function updateSystem(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'pegawai_api_url' => 'required|url',
             'pegawai_api_token' => 'required|string',
             'definitif_nama' => 'required|string',
@@ -110,60 +111,12 @@ class SettingController extends Controller
             'format_nomor_st.required' => 'Format Nomor Surat Tugas harus diisi',
         ]);
 
-        \App\Models\SystemSetting::updateOrCreate(
-            ['key' => 'pegawai_api_url'],
-            ['value' => $request->pegawai_api_url]
-        );
-
-        \App\Models\SystemSetting::updateOrCreate(
-            ['key' => 'pegawai_api_token'],
-            ['value' => $request->pegawai_api_token]
-        );
-
-        \App\Models\SystemSetting::updateOrCreate(
-            ['key' => 'definitif_nama'],
-            ['value' => $request->definitif_nama]
-        );
-
-        \App\Models\SystemSetting::updateOrCreate(
-            ['key' => 'definitif_nip'],
-            ['value' => $request->definitif_nip]
-        );
-
-        \App\Models\SystemSetting::updateOrCreate(
-            ['key' => 'definitif_jabatan'],
-            ['value' => $request->definitif_jabatan]
-        );
-
-        \App\Models\SystemSetting::updateOrCreate(
-            ['key' => 'definitif_pangkat'],
-            ['value' => $request->definitif_pangkat]
-        );
-
-        \App\Models\SystemSetting::updateOrCreate(
-            ['key' => 'kop_pemerintah'],
-            ['value' => $request->kop_pemerintah]
-        );
-
-        \App\Models\SystemSetting::updateOrCreate(
-            ['key' => 'kop_instansi'],
-            ['value' => $request->kop_instansi]
-        );
-
-        \App\Models\SystemSetting::updateOrCreate(
-            ['key' => 'kop_jalan'],
-            ['value' => $request->kop_jalan]
-        );
-
-        \App\Models\SystemSetting::updateOrCreate(
-            ['key' => 'kop_email'],
-            ['value' => $request->kop_email]
-        );
-
-        \App\Models\SystemSetting::updateOrCreate(
-            ['key' => 'format_nomor_st'],
-            ['value' => $request->format_nomor_st]
-        );
+        \Illuminate\Support\Facades\DB::transaction(function () use ($validated) {
+            foreach ($validated as $key => $value) {
+                \App\Models\SystemSetting::updateOrCreate(['key' => $key], ['value' => $value]);
+            }
+        });
+        app(\App\Services\SettingsService::class)->forget();
 
         return redirect()->route('setting.index')
             ->with('success', 'Pengaturan sistem berhasil diperbarui!');

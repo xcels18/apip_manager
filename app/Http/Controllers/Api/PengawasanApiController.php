@@ -2,276 +2,140 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\PegawaiUnavailable;
 use App\Http\Controllers\Controller;
-use App\Models\Pengawasan;
 use App\Http\Resources\PengawasanResource;
+use App\Models\Pengawasan;
+use App\Services\PenugasanService;
+use App\Services\PersonilService;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class PengawasanApiController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    public function __construct(private PersonilService $personil, private PenugasanService $penugasan) {}
+
     public function index(Request $request)
     {
-        $query = Pengawasan::with([
-            'penanggungJawab',
-            'pengendaliTeknis',
-            'ketuaTim',
-            'anggota',
-            'dasarHukum'
+        $filters = $request->validate([
+            'status' => 'sometimes|in:belum_selesai,selesai', 'jenis_penugasan' => 'sometimes|string|max:100',
+            'tahun' => 'sometimes|integer|between:1900,9999', 'bulan' => 'sometimes|integer|between:1,12',
+            'per_page' => 'sometimes|integer|between:1,100', 'page' => 'sometimes|integer|min:1',
         ]);
-
-        // Filter by status
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        $query = Pengawasan::with('dasarHukum');
+        foreach (['status', 'jenis_penugasan'] as $key) {
+            if (isset($filters[$key])) {
+                $query->where($key, $filters[$key]);
+            }
         }
-
-        // Filter by jenis_penugasan
-        if ($request->has('jenis_penugasan')) {
-            $query->where('jenis_penugasan', $request->jenis_penugasan);
+        if (isset($filters['tahun'])) {
+            $query->whereYear('tanggal_st', $filters['tahun']);
         }
-
-        // Filter by year
-        if ($request->has('tahun')) {
-            $query->whereYear('tanggal_st', $request->tahun);
+        if (isset($filters['bulan'])) {
+            $query->whereMonth('tanggal_st', $filters['bulan']);
         }
+        $records = $query->orderByDesc('tanggal_st')->orderByDesc('id')->paginate($filters['per_page'] ?? 15)->withQueryString();
+        $this->personil->inject($records->items(), true);
 
-        // Filter by month
-        if ($request->has('bulan')) {
-            $query->whereMonth('tanggal_st', $request->bulan);
-        }
-
-        // Pagination
-        $perPage = $request->input('per_page', 15);
-        $pengawasan = $query->orderBy('tanggal_st', 'desc')->paginate($perPage);
-
-        return PengawasanResource::collection($pengawasan);
+        return PengawasanResource::collection($records);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'nomor_st' => 'required|string|max:255',
-            'tanggal_st' => 'required|date',
-            'lama_penugasan' => 'required|integer|min:1',
-            'jenis_penugasan' => 'required|in:Audit,Reviu,Monitoring,Evaluasi,Pendampingan,Perjalanan Dinas Luar Daerah',
-            'uraian_penugasan' => 'required|string',
-            'lokasi_penugasan' => 'required|string',
-            'alat_angkut' => 'required|in:darat,laut,udara',
-            'status' => 'required|in:belum_selesai,selesai',
-            'penanggung_jawab_id' => 'nullable|exists:pegawai,id',
-            'pengendali_teknis_id' => 'nullable|exists:pegawai,id',
-            'ketua_tim_id' => 'nullable|exists:pegawai,id',
-            'anggota' => 'nullable|array',
-            'anggota.*' => 'exists:pegawai,id',
-            'dasar_hukum' => 'required|array|min:1',
-            'dasar_hukum.*' => 'required|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        try {
-            $pengawasan = Pengawasan::create([
-                'nomor_st' => $request->nomor_st,
-                'tanggal_st' => $request->tanggal_st,
-                'lama_penugasan' => $request->lama_penugasan,
-                'jenis_penugasan' => $request->jenis_penugasan,
-                'uraian_penugasan' => $request->uraian_penugasan,
-                'lokasi_penugasan' => $request->lokasi_penugasan,
-                'alat_angkut' => $request->alat_angkut,
-                'status' => $request->status,
-                'penanggung_jawab_id' => $request->penanggung_jawab_id,
-                'pengendali_teknis_id' => $request->pengendali_teknis_id,
-                'ketua_tim_id' => $request->ketua_tim_id,
-            ]);
-
-            // Attach anggota
-            if ($request->has('anggota') && is_array($request->anggota)) {
-                foreach ($request->anggota as $anggotaId) {
-                    \Illuminate\Support\Facades\DB::table('pengawasan_anggota')->insert([
-                        'pengawasan_id' => $pengawasan->id,
-                        'pegawai_id' => $anggotaId
-                    ]);
-                }
-            }
-
-            // Create dasar hukum
-            if ($request->has('dasar_hukum')) {
-                foreach ($request->dasar_hukum as $dasar) {
-                    $pengawasan->dasarHukum()->create(['isi_dasar' => $dasar]);
-                }
-            }
-
-            $pengawasan->load(['penanggungJawab', 'pengendaliTeknis', 'ketuaTim', 'anggota', 'dasarHukum']);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Pengawasan created successfully',
-                'data' => new PengawasanResource($pengawasan),
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create pengawasan',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
-        $pengawasan = Pengawasan::with([
-            'penanggungJawab',
-            'pengendaliTeknis',
-            'ketuaTim',
-            'anggota',
-            'dasarHukum'
-        ])->find($id);
+        $record = Pengawasan::with('dasarHukum')->findOrFail($id);
+        $this->personil->inject([$record], true);
 
-        if (!$pengawasan) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Pengawasan not found',
-            ], 404);
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => new PengawasanResource($pengawasan),
-        ], 200);
+        return response()->json(['success' => true, 'data' => new PengawasanResource($record)]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
+    public function store(Request $request)
+    {
+        return $this->save($request);
+    }
+
     public function update(Request $request, string $id)
     {
-        $pengawasan = Pengawasan::find($id);
+        return $this->save($request, Pengawasan::findOrFail($id));
+    }
 
-        if (!$pengawasan) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Pengawasan not found',
-            ], 404);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'nomor_st' => 'sometimes|required|string|max:255',
-            'tanggal_st' => 'sometimes|required|date',
-            'lama_penugasan' => 'sometimes|required|integer|min:1',
-            'jenis_penugasan' => 'sometimes|required|in:Audit,Reviu,Monitoring,Evaluasi,Pendampingan,Perjalanan Dinas Luar Daerah',
-            'uraian_penugasan' => 'sometimes|required|string',
-            'lokasi_penugasan' => 'sometimes|required|string',
-            'alat_angkut' => 'sometimes|required|in:darat,laut,udara',
-            'status' => 'sometimes|required|in:belum_selesai,selesai',
-            'penanggung_jawab_id' => 'nullable|exists:pegawai,id',
-            'pengendali_teknis_id' => 'nullable|exists:pegawai,id',
-            'ketua_tim_id' => 'nullable|exists:pegawai,id',
-            'anggota' => 'nullable|array',
-            'anggota.*' => 'exists:pegawai,id',
-            'dasar_hukum' => 'sometimes|required|array|min:1',
-            'dasar_hukum.*' => 'required|string',
+    private function save(Request $request, ?Pengawasan $existing = null)
+    {
+        $required = $existing ? 'sometimes|required' : 'required';
+        $data = $request->validate([
+            'nomor_st' => [$existing ? 'sometimes' : 'required', 'required', 'string', 'max:100', Rule::unique('pengawasan')->ignore($existing?->id)],
+            'tanggal_st' => "$required|date",
+            'lama_penugasan' => "$required|integer|min:1|max:366",
+            'jenis_penugasan' => "$required|in:Audit,Reviu,Monitoring,Evaluasi,Pendampingan,Perjalanan Dinas Luar Daerah",
+            'uraian_penugasan' => "$required|string", 'lokasi_penugasan' => "$required|string|max:200",
+            'alat_angkut' => "$required|in:darat,udara", 'status' => "$required|in:belum_selesai,selesai",
+            'penanggung_jawab_id' => 'nullable|integer|min:1', 'pengendali_teknis_id' => 'nullable|integer|min:1',
+            'ketua_tim_id' => 'nullable|integer|min:1', 'anggota' => 'nullable|array', 'anggota.*' => 'required|integer|min:1|distinct',
+            'dasar_hukum' => "$required|array|min:1", 'dasar_hukum.*' => 'required|string',
         ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
         try {
-            $pengawasan->update($request->only([
-                'nomor_st',
-                'tanggal_st',
-                'lama_penugasan',
-                'jenis_penugasan',
-                'uraian_penugasan',
-                'lokasi_penugasan',
-                'alat_angkut',
-                'status',
-                'penanggung_jawab_id',
-                'pengendali_teknis_id',
-                'ketua_tim_id',
-            ]));
-
-            // Update anggota
-            if ($request->has('anggota') && is_array($request->anggota)) {
-                \Illuminate\Support\Facades\DB::table('pengawasan_anggota')->where('pengawasan_id', $pengawasan->id)->delete();
-                foreach ($request->anggota as $anggotaId) {
-                    \Illuminate\Support\Facades\DB::table('pengawasan_anggota')->insert([
-                        'pengawasan_id' => $pengawasan->id,
-                        'pegawai_id' => $anggotaId
-                    ]);
+            return DB::transaction(function () use ($request, $data, $existing) {
+                $record = $existing ? Pengawasan::lockForUpdate()->findOrFail($existing->id) : new Pengawasan;
+                $effective = array_replace($record->getAttributes(), $data);
+                if (! array_key_exists('anggota', $data)) {
+                    $effective['anggota'] = $record->exists ? DB::table('pengawasan_anggota')->where('pengawasan_id', $record->id)->pluck('pegawai_id')->all() : [];
                 }
-            }
-
-            // Update dasar hukum
-            if ($request->has('dasar_hukum')) {
-                $pengawasan->dasarHukum()->delete();
-                foreach ($request->dasar_hukum as $dasar) {
-                    $pengawasan->dasarHukum()->create(['isi_dasar' => $dasar]);
+                $this->penugasan->validate($effective, $record->exists ? $record : null);
+                $record->fill(Arr::except($data, ['anggota', 'dasar_hukum']));
+                if (! $record->exists) {
+                    $record->penandatangan_type = 'definitif';
+                    $record->fill(app(\App\Services\SettingsService::class)->documentSnapshot());
                 }
-            }
+                $record->save();
+                if (array_key_exists('anggota', $data)) {
+                    DB::table('pengawasan_anggota')->where('pengawasan_id', $record->id)->delete();
+                    foreach ($data['anggota'] ?? [] as $id) {
+                        DB::table('pengawasan_anggota')->insert(['pengawasan_id' => $record->id, 'pegawai_id' => $id]);
+                    }
+                }
+                if (array_key_exists('dasar_hukum', $data)) {
+                    $record->dasarHukum()->delete();
+                    foreach (array_values($data['dasar_hukum']) as $order => $text) {
+                        $record->dasarHukum()->create(['isi_dasar' => $text, 'urutan' => $order + 1]);
+                    }
+                }
+                $this->personil->snapshot($record);
+                $record->load('dasarHukum');
 
-            $pengawasan->load(['penanggungJawab', 'pengendaliTeknis', 'ketuaTim', 'anggota', 'dasarHukum']);
+                // Serialize while still inside the transaction, so response failures roll back too.
+                return response()->json([
+                    'success' => true,
+                    'message' => $existing ? 'Pengawasan updated successfully' : 'Pengawasan created successfully',
+                    'data' => (new PengawasanResource($record))->resolve($request),
+                ], $existing ? 200 : 201);
+            });
+        } catch (ValidationException|PegawaiUnavailable $e) {
+            throw $e;
+        } catch (UniqueConstraintViolationException $e) {
+            throw ValidationException::withMessages(['nomor_st' => 'Nomor Surat Tugas sudah digunakan.']);
+        } catch (\Throwable $e) {
+            report($e);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Pengawasan updated successfully',
-                'data' => new PengawasanResource($pengawasan),
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update pengawasan',
-                'error' => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Pengawasan gagal disimpan. Silakan coba kembali.'], 500);
         }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        $pengawasan = Pengawasan::find($id);
-
-        if (!$pengawasan) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Pengawasan not found',
-            ], 404);
+        $record = Pengawasan::findOrFail($id);
+        DB::transaction(function () use ($record) {
+            DB::table('pengawasan_anggota')->where('pengawasan_id', $record->id)->delete();
+            $record->dasarHukum()->delete();
+            $record->delete();
+        });
+        if ($record->file_laporan) {
+            Storage::disk('public')->delete($record->file_laporan);
         }
 
-        try {
-            $pengawasan->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Pengawasan deleted successfully',
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete pengawasan',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        return response()->json(['success' => true, 'message' => 'Pengawasan deleted successfully']);
     }
 }

@@ -133,6 +133,12 @@
     <!-- MAIN CONTENT AREA (240px sidebar + 32px gap = 272px) -->
     <main class="pt-8 pb-16 px-4 md:pl-[272px] md:pr-margin-desktop min-h-[calc(100vh-64px)] w-full flex flex-col h-full">
         <div class="max-w-[1200px] w-full flex flex-col h-full">
+            @if(session('error'))
+                <div role="alert" class="mb-4 p-4 rounded-lg bg-red-50 text-red-800 border border-red-200">{{ session('error') }}</div>
+            @endif
+            @if($errors->any())
+                <div role="alert" class="mb-4 p-4 rounded-lg bg-red-50 text-red-800 border border-red-200">{{ $errors->first() }}</div>
+            @endif
             @yield('content')
         </div>
     </main>
